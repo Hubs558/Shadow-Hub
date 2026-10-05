@@ -1898,7 +1898,7 @@ function rodarCicloMultiArea()
         Roubo.Running = false
         return
     end
-    task.wait(0.15)
+    task.wait(0.10)
 
     local ovosAntes = {}
     for _, e in ipairs(listEggs(false)) do ovosAntes[e.uid] = true end
@@ -1944,7 +1944,7 @@ function rodarCicloMultiArea()
         Roubo.Running = false
         return
     end
-    task.wait(0.15)
+    task.wait(0.10)
     ligarAntiMorte()
 
     if uidDropado then
@@ -2332,4 +2332,3 @@ ShadowInstance.Unload = function()
         end
     end)
 end
-
