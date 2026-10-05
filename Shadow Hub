@@ -2119,7 +2119,7 @@ logoImg.Size = UDim2.fromScale(0.85, 0.85)
 logoImg.Position = UDim2.fromScale(0.075, 0.075)
 logoImg.BackgroundTransparency = 1
 logoImg.ScaleType = Enum.ScaleType.Fit
-logoImg.Image = "rbxassetid://135512444806663"  -- logo Kirito Hub
+logoImg.Image = "rbxassetid://92667850616234"  -- logo Kirito Hub
 logoImg.Parent = logoHolder
 
 local logoImgCorner = Instance.new("UICorner")
