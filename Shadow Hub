@@ -2048,3 +2048,205 @@ task.spawn(function()
 end)
 
 desligarAntiMorte()
+
+-- ============================================================
+-- BOTÃO SAIR DA ESTEIRA (com logo Kirito)
+-- ============================================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local net = ReplicatedStorage:FindFirstChild("Packages")
+net = net and net:FindFirstChild("Networking")
+local askDoff = net and net:FindFirstChild("RF/Treadmill/AskDoff")
+
+-- ============ GUI ============
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BotaoSairEsteira"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+-- Botão principal (fundo preto)
+local botao = Instance.new("TextButton")
+botao.Name = "Botao"
+botao.Size = UDim2.fromOffset(220, 48)
+botao.Position = UDim2.new(0.5, -110, 0.9, 0)
+botao.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+botao.BackgroundTransparency = 0.05
+botao.BorderSizePixel = 0
+botao.Text = ""
+botao.AutoButtonColor = false
+botao.Active = true
+botao.Visible = false
+botao.Parent = screenGui
+
+-- Canto arredondado
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = botao
+
+-- Borda sutil
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(60, 60, 60)
+stroke.Thickness = 1
+stroke.Transparency = 0.3
+stroke.Parent = botao
+
+-- Logo do Kirito (à esquerda)
+local logoHolder = Instance.new("Frame")
+logoHolder.Size = UDim2.fromOffset(32, 32)
+logoHolder.Position = UDim2.new(0, 8, 0.5, -16)
+logoHolder.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+logoHolder.BorderSizePixel = 0
+logoHolder.Parent = botao
+
+local logoCorner = Instance.new("UICorner")
+logoCorner.CornerRadius = UDim.new(1, 0)  -- círculo
+logoCorner.Parent = logoHolder
+
+local logoStroke = Instance.new("UIStroke")
+logoStroke.Color = Color3.fromRGB(80, 80, 80)
+logoStroke.Thickness = 1
+logoStroke.Transparency = 0.4
+logoStroke.Parent = logoHolder
+
+local logoImg = Instance.new("ImageLabel")
+logoImg.Size = UDim2.fromScale(0.85, 0.85)
+logoImg.Position = UDim2.fromScale(0.075, 0.075)
+logoImg.BackgroundTransparency = 1
+logoImg.ScaleType = Enum.ScaleType.Fit
+logoImg.Image = "rbxassetid://135512444806663"  -- logo Kirito Hub
+logoImg.Parent = logoHolder
+
+local logoImgCorner = Instance.new("UICorner")
+logoImgCorner.CornerRadius = UDim.new(1, 0)
+logoImgCorner.Parent = logoImg
+
+-- Texto "Sair da esteira"
+local texto = Instance.new("TextLabel")
+texto.Size = UDim2.new(1, -55, 1, 0)
+texto.Position = UDim2.fromOffset(48, 0)
+texto.BackgroundTransparency = 1
+texto.Text = "Sair da esteira"
+texto.TextColor3 = Color3.fromRGB(230, 230, 230)
+texto.Font = Enum.Font.GothamBold
+texto.TextSize = 13
+texto.TextXAlignment = Enum.TextXAlignment.Left
+texto.Parent = botao
+
+-- ============ DETECÇÃO ============
+local function estaNaEsteira()
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    for _, d in ipairs(workspace:GetDescendants()) do
+        if d:IsA("BasePart") and d.Name == "TreadmillBottom" then
+            if (d.Position - hrp.Position).Magnitude < 12 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- ============ SAIR ============
+local function sair()
+    if askDoff then
+        pcall(function()
+            askDoff:InvokeServer()
+        end)
+    end
+    
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            pcall(function()
+                hum.Jump = true
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end)
+        end
+    end
+end
+
+botao.MouseButton1Click:Connect(sair)
+botao.TouchTap:Connect(sair)
+
+-- ============ MOSTRAR/ESCONDER ============
+task.spawn(function()
+    while true do
+        task.wait(0.3)
+        botao.Visible = estaNaEsteira()
+    end
+end)
+
+-- ============================================================
+-- EXTRAS: Anti-Trap + Instant Click
+-- Tudo ligado direto, sem GUI, sem print
+-- ============================================================
+local CollectionService = game:GetService("CollectionService")
+
+-- ============ ANTI-TRAP ============
+local canTouchOriginais = {}
+
+local function desativarTouch(inst)
+    if inst:IsA("BasePart") and canTouchOriginais[inst] == nil then
+        canTouchOriginais[inst] = inst.CanTouch
+        pcall(function()
+            inst.CanTouch = false
+        end)
+    end
+end
+
+local function processarTrap(trap)
+    if not trap then return end
+    desativarTouch(trap)
+    for _, d in ipairs(trap:GetDescendants()) do
+        desativarTouch(d)
+    end
+end
+
+for _, t in ipairs(CollectionService:GetTagged("PlacedTrap")) do
+    processarTrap(t)
+end
+
+CollectionService:GetInstanceAddedSignal("PlacedTrap"):Connect(function(t)
+    task.defer(function()
+        processarTrap(t)
+    end)
+end)
+
+workspace.DescendantAdded:Connect(function(d)
+    local pai = d.Parent
+    while pai do
+        if pai:HasTag("PlacedTrap") then
+            desativarTouch(d)
+            break
+        end
+        pai = pai.Parent
+    end
+end)
+
+-- ============ INSTANT CLICK (Instant Prompt) ============
+local function aplicarInstantClick(obj)
+    if obj:IsA("ProximityPrompt") then
+        pcall(function()
+            obj.HoldDuration = 0
+            obj.RequiresLineOfSight = false
+        end)
+    end
+end
+
+for _, v in ipairs(workspace:GetDescendants()) do
+    aplicarInstantClick(v)
+end
+
+workspace.DescendantAdded:Connect(function(v)
+    aplicarInstantClick(v)
+end)
