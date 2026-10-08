@@ -71,7 +71,7 @@ end
 -- Loader visual integrado à tela ShadowHubAtualizando.
 -- Escolha no código: 1, 2, 3 ... 100.
 -- Exemplo: 20 carrega de 0% até 20% e permanece em 20%.
-local SHADOW_HUB_LOADING_TARGET = 80
+local SHADOW_HUB_LOADING_TARGET = 90
 SHADOW_HUB_LOADING_TARGET = math.clamp(
     math.floor(tonumber(SHADOW_HUB_LOADING_TARGET) or 100), 1, 100
 )
