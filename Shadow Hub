@@ -1,2943 +1,1807 @@
--- ============================================================
--- SHADOW HUB — AUTO STEAL MULTI-ÁREA
--- ============================================================
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
-local SoundService = game:GetService("SoundService")
-
-local localPlayer = Players.LocalPlayer
-if not localPlayer then return end
-
-local parent = localPlayer:FindFirstChildOfClass("PlayerGui")
-    or localPlayer:WaitForChild("PlayerGui", 10)
-
-if not parent then return end
-
-for _, child in ipairs(parent:GetChildren()) do
-    if child:IsA("ScreenGui")
-        and (
-            child.Name == "ShadowHubCompactGui"
-            or child.Name == "BotaoSairEsteira"
-        ) then
-        child:Destroy()
-    end
+local r5
+local r1 = nil
+local r6 = math.floor
+local r2 = (game):GetService("Players")
+local r6 = ((game):GetService("TweenService"))
+local_function_23 = r1
+r4 = (r2.LocalPlayer)
+local_function_23 = r1
+local captured_1 = r4
+local function local_function_3(...)
+	local local_69 = ((captured_1.PlayerGui):FindFirstChild("ShadowHubAtualizando"))
+	if local_69 then
+		local_69:Destroy()
+	end
 end
+local r5 = ""
+pcall(local_function_3)
+local_function_21 = r1
+local r10 = Instance.new
+local_function_21 = r1
+local r13 = r10("ScreenGui")
+local_function_21 = r1
+r13.Name = "ShadowHubAtualizando"
+r13.Enabled = true
+r13.ResetOnSpawn = false
+r13.IgnoreGuiInset = true
+r13.DisplayOrder = 999
+local_function_27 = r1
+r13.Parent = (r4:WaitForChild("PlayerGui"))
+local r14 = ((Instance).new)("Frame")
+local_function_21 = r1
+local_function_28 = r1
+r14.AnchorPoint = (((Vector2).new)(0.5, 0.5))
+local_function_21 = r1
+local_function_28 = r1
+r14.Position = (((UDim2).fromScale)(0.5, 0.5))
+local_function_21 = r1
+local_function_28 = r1
+r14.Size = (((UDim2).fromOffset)(310, 225))
+local_function_21 = r1
+local_function_28 = r1
+r14.BackgroundColor3 = ((Color3).fromRGB(7, 10, 8))
+local_function_21 = r1
+r14.BorderSizePixel = 0
+local_function_21 = r1
+r14.Parent = r13
 
--- ============================================================
--- CONFIG
--- ============================================================
-
-local Config = {
-    AntiTrap = true,
-    InstantClick = true,
-    ESPEgg = false,
-    ESPEggTerreno = false,
-}
-
--- ============================================================
--- ÁREAS
--- ============================================================
-
-local AREAS = {
-    {
-        name = "Safe",
-        pos = Vector3.new(
-            510.920288,
-            71.742348,
-            -361.933289
-        )
-    },
-
-    { name = "Floresta",      pos = Vector3.new( 598.010193, 71.742241, -351.739929 ) },
-    { name = "Lago",          pos = Vector3.new( 743.410767, 71.742241, -387.089050 ) },
-    { name = "Deserto",       pos = Vector3.new( 951.078125, 71.742233, -340.712463 ) },
-    { name = "Selva",         pos = Vector3.new( 1189.831909, 71.742241, -386.645721 ) },
-    { name = "Neve",          pos = Vector3.new( 1486.429443, 71.742241, -363.730835 ) },
-    { name = "Vulcão",        pos = Vector3.new( 1877.404663, 71.742317, -364.392578 ) },
-    { name = "Oceano",        pos = Vector3.new( 2282.557129, 71.742317, -367.384338 ) },
-    { name = "Pré-histórico", pos = Vector3.new( 2814.350586, 71.742256, -361.576477 ) },
-    { name = "Cósmico",       pos = Vector3.new( 3390.575439, 71.742348, -361.654022 ) },
-    { name = "Kitsune",       pos = Vector3.new( 4027.572754, 71.742348, -367.578339 ) },
-    { name = "Titan",         pos = Vector3.new( 4797.355957, 71.742348, -365.980499 ) },
-    { name = "Demon Anjo",    pos = Vector3.new( 5661.448242, 71.742348, -364.165680 ) },
-    { name = "Leão",          pos = Vector3.new( 6696.432129, 71.742348, -373.551697 ) }
-}
-
-local SAFE_INDEX = 1
-
--- ============================================================
--- DETECTAR ÁREA ATUAL
--- ============================================================
-
-local function getRoot()
-    local char = localPlayer.Character
-    return char and char:FindFirstChild("HumanoidRootPart")
-end
-
-local function getHum()
-    local char = localPlayer.Character
-    return char and char:FindFirstChildOfClass("Humanoid")
-end
-
-local function detectarAreaAtual()
-    local hrp = getRoot()
-    if not hrp then
-        return nil, nil
-    end
-
-    local melhorIndex = nil
-    local menorDist = math.huge
-
-    for i, area in ipairs(AREAS) do
-        if i > SAFE_INDEX then
-            local dist = (
-                Vector3.new(
-                    hrp.Position.X,
-                    area.pos.Y,
-                    hrp.Position.Z
-                ) - Vector3.new(
-                    area.pos.X,
-                    area.pos.Y,
-                    area.pos.Z
-                )
-            ).Magnitude
-
-            if dist < menorDist then
-                menorDist = dist
-                melhorIndex = i
-            end
-        end
-    end
-
-    if melhorIndex then
-        return melhorIndex, AREAS[melhorIndex]
-    end
-
-    return nil, nil
-end
-
--- ============================================================
--- PRÓXIMO DESTINO
--- Leão (14) e Demon Anjo (13) → vizinha (índice - 1)
--- Resto → pula 1 (índice - 2)
--- ============================================================
-
-local function proximoDestino(indexAtual)
-    if not indexAtual then
-        return SAFE_INDEX, AREAS[SAFE_INDEX]
-    end
-
-    local proximoIndex
-
-    if indexAtual == 14 or indexAtual == 13 then
-        proximoIndex = indexAtual - 1
-    else
-        proximoIndex = indexAtual - 2
-    end
-
-    if proximoIndex <= SAFE_INDEX then
-        return SAFE_INDEX, AREAS[SAFE_INDEX]
-    end
-
-    return proximoIndex, AREAS[proximoIndex]
-end
-
--- ============================================================
--- ESTADO
--- ============================================================
-
-local Roubo = {
-    Enabled = false,
-    Running = false,
-
-    SelectedUid = nil,
-    SelectedCat = nil,
-    LockedUid = nil,
-    LockedCat = nil,
-    TargetVersion = 0,
-    AutoSelected = false
-}
-
-local Carregando = {
-    IsCarrying = false,
-    Uid = nil,
-    AreaId = nil
-}
-
-local EggState
-local AssetsDir
-local AssetsEarnings
-
--- ============================================================
--- MÓDULOS
--- ============================================================
-
+-- Fechar o loader enquanto ele está visível.
 do
-    local client = ReplicatedStorage:FindFirstChild("Client")
-    local mod = client and client:FindFirstChild("EggState")
-
-    if mod and mod:IsA("ModuleScript") then
-        local ok, result = pcall(require, mod)
-        if ok then
-            EggState = result
-        end
-    end
-end
-
-do
-    local data = ReplicatedStorage:FindFirstChild("Data")
-    local mod = data and data:FindFirstChild("Assets")
-
-    if mod and mod:IsA("ModuleScript") then
-        local ok, result = pcall(require, mod)
-        if ok and type(result) == "table" then
-            AssetsDir = result.Directory
-        end
-    end
-end
-
-do
-    local shared = ReplicatedStorage:FindFirstChild("Shared")
-    local util = shared and shared:FindFirstChild("Util")
-    local mod = util and util:FindFirstChild("AssetEarnings")
-
-    if mod and mod:IsA("ModuleScript") then
-        local ok, result = pcall(require, mod)
-        if ok and type(result) == "table" then
-            AssetsEarnings = result
-        end
-    end
-end
-
--- ============================================================
--- CARRY EVENT
--- ============================================================
-
-do
-    local ok, carryChanged = pcall(function()
-        return EggState and EggState.CarryChanged
-    end)
-
-    if ok and type(carryChanged) == "table" and type(carryChanged.Connect) == "function" then
-        pcall(function()
-            carryChanged:Connect(function(info)
-                if type(info) ~= "table" then return end
-
-                local carrying = info.IsCarrying == true
-                if info.GuardDisabled == true then
-                    carrying = false
-                end
-
-                Carregando.IsCarrying = carrying
-
-                if carrying then
-                    Carregando.Uid = tostring(info.Uid or "")
-                    Carregando.AreaId = tostring(info.AreaId or "")
-                else
-                    Carregando.Uid = nil
-                    Carregando.AreaId = nil
-                end
-            end)
-        end)
-    end
-end
-
--- ============================================================
--- ASSET HELPERS
--- ============================================================
-
-local function calcValue(rec)
-    if not AssetsEarnings then
-        return 0
-    end
-
-    local baseRate = 0
-    local d = AssetsDir and AssetsDir[rec.AssetCategory]
-
-    if d then
-        if d.Egg and tonumber(d.Egg.Earnings) then
-            baseRate = tonumber(d.Egg.Earnings)
-        elseif tonumber(d.Earnings) then
-            baseRate = tonumber(d.Earnings)
-        elseif tonumber(d.BaseRate) then
-            baseRate = tonumber(d.BaseRate)
-        end
-    end
-
-    if baseRate == 0 then
-        local item = {
-            Category = rec.AssetCategory,
-            Scale = tonumber(rec.AssetScale) or 1,
-            Mutations = rec.Mutations or {}
-        }
-
-        local ok, value = pcall(
-            AssetsEarnings.LiveRatePerSecond,
-            item,
-            nil,
-            nil,
-            localPlayer
-        )
-
-        if ok and type(value) == "number" and value > 0 then
-            return value
-        end
-    end
-
-    local scale = tonumber(rec.AssetScale) or 1
-    local total = baseRate * scale
-
-    local mutations = rec.Mutations or {}
-    local multiplier = 1
-
-    for _, mutation in pairs(mutations) do
-        if type(mutation) == "table" and tonumber(mutation.Multiplier) then
-            multiplier *= tonumber(mutation.Multiplier)
-        elseif type(mutation) == "string" then
-            local mutData = AssetsDir and AssetsDir[mutation]
-            if mutData and tonumber(mutData.Multiplier) then
-                multiplier *= tonumber(mutData.Multiplier)
-            end
-        end
-    end
-
-    return total * multiplier
-end
-
-local function displayName(cat)
-    local d = AssetsDir and AssetsDir[cat]
-    return (d and d.DisplayName) or cat or "?"
-end
-
-local function rarityOf(cat)
-    local d = AssetsDir and AssetsDir[cat]
-    if d and d.Rarity then
-        return d.Rarity.DisplayName or d.Rarity._id or "?"
-    end
-    return "?"
-end
-
-local function rarityColorOf(cat)
-    local d = AssetsDir and AssetsDir[cat]
-    if d and d.Rarity and typeof(d.Rarity.Color) == "Color3" then
-        return d.Rarity.Color
-    end
-    return Color3.fromRGB(200, 200, 200)
-end
-
-local function iconOf(cat)
-    local d = AssetsDir and AssetsDir[cat]
-    if type(d) ~= "table" then return nil end
-
-    if d.Icon and d.Icon ~= "" then
-        local s = tostring(d.Icon)
-        if tonumber(s) then return "rbxassetid://" .. s end
-        if s:find("rbxassetid") then return s end
-    end
-
-    if type(d.Egg) == "table" and d.Egg.Icon and d.Egg.Icon ~= "" then
-        local s = tostring(d.Egg.Icon)
-        if tonumber(s) then return "rbxassetid://" .. s end
-        if s:find("rbxassetid") then return s end
-    end
-
-    return nil
-end
-
-local function rateFormat(n)
-    n = tonumber(n) or 0
-    local units = {
-        {1e12, "T"},
-        {1e9, "B"},
-        {1e6, "M"},
-        {1e3, "K"}
-    }
-
-    for _, u in ipairs(units) do
-        if n >= u[1] then
-            local value = n / u[1]
-            local txt
-            if value < 10 then
-                txt = string.format("%.2f", value)
-            else
-                txt = string.format("%.1f", value)
-            end
-            txt = txt:gsub("%.?0+$", "")
-            return txt .. u[2]
-        end
-    end
-
-    return tostring(math.floor(n))
-end
-
--- ============================================================
--- LISTA DE OVOS (COM OVOS DO TERRENO)
--- ============================================================
-
-local stolen = {}
-local unreachable = {}
-
-local STOLEN_FOR = 120
-local UNREACHABLE_FOR = 45
-
-local function pruneStolen()
-    local now = os.clock()
-
-    for uid, at in pairs(stolen) do
-        if now - at > STOLEN_FOR then
-            stolen[uid] = nil
-        end
-    end
-
-    for uid, at in pairs(unreachable) do
-        if now - at > UNREACHABLE_FOR then
-            unreachable[uid] = nil
-        end
-    end
-end
-
-local function ovoExisteNoMundo(pos)
-    if not pos then return false end
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Enabled then
-            local p = obj.Parent
-            if p then
-                local ppos
-                if p:IsA("BasePart") then
-                    ppos = p.Position
-                elseif p:IsA("Model") then
-                    ppos = p:GetPivot().Position
-                end
-
-                if ppos and (ppos - pos).Magnitude < 12 then
-                    return true
-                end
-            end
-        end
-    end
-
-    return false
-end
-
-local function listEggs(confirmarMundo)
-    if not EggState
-        or type(EggState.ReadFieldEggs) ~= "function" then
-        return {}
-    end
-
-    local ok, data = pcall(EggState.ReadFieldEggs)
-    if not ok or type(data) ~= "table" or type(data.Records) ~= "table" then
-        return {}
-    end
-
-    pruneStolen()
-
-    local placedRenders = workspace:FindFirstChild("PlacedEggRenders")
-    local out = {}
-    local vistos = {}
-
-    -- ========================================================
-    -- OVOS DO CAMPO
-    -- ========================================================
-    for _, rec in pairs(data.Records) do
-        if type(rec) == "table" and rec.Uid and rec.AssetCategory then
-            local uid = tostring(rec.Uid)
-
-            if not vistos[uid] then
-                local pos
-                if rec.BoundsCFrame and rec.BoundsCFrame.Position then
-                    pos = rec.BoundsCFrame.Position
-                elseif rec.CFrame and rec.CFrame.Position then
-                    pos = rec.CFrame.Position
-                elseif rec.Position then
-                    pos = rec.Position
-                end
-
-                local state = tostring(rec.State or "?")
-                local carregado = rec.CarrierUserId ~= nil and rec.CarrierUserId ~= 0
-
-                local valido = state ~= "Carried"
-                    and state ~= "Inventory"
-                    and state ~= "Base"
-                    and not carregado
-                    and pos ~= nil
-
-                if valido then
-                    if rec.Active == false
-                        or rec.IsActive == false
-                        or rec.Removed == true
-                        or rec.IsRemoved == true
-                        or rec.Dead == true
-                        or rec.IsDead == true
-                        or rec.Despawned == true
-                        or rec.IsDespawned == true then
-                        valido = false
-                    end
-                end
-
-                if valido and stolen[uid] then
-                    valido = false
-                end
-
-                if valido and unreachable[uid] then
-                    valido = false
-                end
-
-                if valido then
-                    vistos[uid] = true
-                    out[#out + 1] = {
-                        uid = uid,
-                        state = state,
-                        pos = pos,
-                        value = calcValue(rec),
-                        cat = rec.AssetCategory,
-                        name = displayName(rec.AssetCategory),
-                        rarity = rarityOf(rec.AssetCategory),
-                        color = rarityColorOf(rec.AssetCategory),
-                        icon = iconOf(rec.AssetCategory),
-                        isBase = false,
-                    }
-                end
-            end
-        end
-    end
-
-    -- ========================================================
-    -- OVOS DO TERRENO (BASE)
-    -- ========================================================
-    if type(EggState.ReadOwnerEggs) == "function" and placedRenders then
-        local okOwner, ownerEggs = pcall(EggState.ReadOwnerEggs, localPlayer.UserId)
-
-        if okOwner and type(ownerEggs) == "table" then
-            for uid, rec in pairs(ownerEggs) do
-                if type(rec) == "table"
-                    and rec.Placement ~= nil
-                    and rec.AssetCategory then
-
-                    local model
-                    for _, child in ipairs(placedRenders:GetChildren()) do
-                        if string.find(child.Name, tostring(uid), 1, true) then
-                            model = child
-                            break
-                        end
-                    end
-
-                    if model then
-                        local pos
-                        pcall(function()
-                            if model:IsA("Model") then
-                                pos = model:GetPivot().Position
-                            elseif model:IsA("BasePart") then
-                                pos = model.CFrame.Position
-                            end
-                        end)
-
-                        if pos then
-                            out[#out + 1] = {
-                                uid = "base_" .. tostring(uid),
-                                state = "Base",
-                                pos = pos,
-                                value = calcValue(rec),
-                                cat = rec.AssetCategory,
-                                name = displayName(rec.AssetCategory),
-                                rarity = rarityOf(rec.AssetCategory),
-                                color = rarityColorOf(rec.AssetCategory),
-                                icon = iconOf(rec.AssetCategory),
-                                isBase = true,
-                            }
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    table.sort(out, function(a, b) return a.value > b.value end)
-    return out
-end
-
-local function listCampoEggs()
-    local out = {}
-    for _, egg in ipairs(listEggs()) do
-        if not egg.isBase then
-            out[#out + 1] = egg
-        end
-    end
-    return out
-end
-
-local function acharOvoPorUid(uid)
-    if not uid then
-        return nil
-    end
-
-    for _, egg in ipairs(listEggs()) do
-        if egg.uid == uid then
-            return egg
-        end
-    end
-
-    return nil
-end
-
-local function acharOvoMesmoTipoPerto(cat, posJogador, raio)
-    raio = raio or 30
-
-    local maisPerto
-    local menorDist = raio
-
-    for _, egg in ipairs(listEggs()) do
-        if egg.cat == cat and egg.pos and not egg.isBase then
-            local dist = (egg.pos - posJogador).Magnitude
-            if dist < menorDist then
-                menorDist = dist
-                maisPerto = egg
-            end
-        end
-    end
-
-    return maisPerto
-end
-
--- ============================================================
--- VERIFICAR CARRY
--- ============================================================
-
-local function estaSegurandoOvoAPI()
-    if not EggState
-        or type(EggState.ReadFieldEggs) ~= "function" then
-        return false
-    end
-
-    local ok, data = pcall(EggState.ReadFieldEggs)
-    if not ok or type(data) ~= "table" or type(data.Records) ~= "table" then
-        return false
-    end
-
-    for _, rec in pairs(data.Records) do
-        if type(rec) == "table"
-            and rec.State == "Carried"
-            and tonumber(rec.CarrierUserId) == localPlayer.UserId then
-            return true, tostring(rec.Uid)
-        end
-    end
-
-    return false
-end
-
-local function estaSegurandoOvo()
-    local api, uid = estaSegurandoOvoAPI()
-    if api then return true, uid end
-
-    if Carregando.IsCarrying and Carregando.Uid then
-        return true, Carregando.Uid
-    end
-
-    return false
-end
-
--- ============================================================
--- TRAVAR PERSONAGEM
--- ============================================================
-
-local function travarPersonagem()
-    local hum = getHum()
-    if not hum then return end
-
-    local char = localPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    pcall(function()
-        hum:Move(Vector3.zero, false)
-        hum:MoveTo(hrp.Position)
-        hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
-        hrp.AssemblyAngularVelocity = Vector3.zero
+    local shadowLoaderClose = Instance.new("TextButton")
+    shadowLoaderClose.Name = "ShadowHubCloseButton"
+    shadowLoaderClose.AnchorPoint = Vector2.new(1, 0)
+    shadowLoaderClose.Position = UDim2.new(1, -8, 0, 8)
+    shadowLoaderClose.Size = UDim2.fromOffset(28, 28)
+    shadowLoaderClose.BackgroundColor3 = Color3.fromRGB(150, 45, 55)
+    shadowLoaderClose.BorderSizePixel = 0
+    shadowLoaderClose.Text = "X"
+    shadowLoaderClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+    shadowLoaderClose.Font = Enum.Font.GothamBold
+    shadowLoaderClose.TextSize = 14
+    shadowLoaderClose.ZIndex = 10000
+    shadowLoaderClose.Parent = r14
+    Instance.new("UICorner", shadowLoaderClose).CornerRadius = UDim.new(0, 7)
+    shadowLoaderClose.Activated:Connect(function()
+        if getgenv then getgenv().ShadowHubFechado = true end
+        if r13 then r13:Destroy() end
     end)
 end
 
--- ============================================================
--- SUBIR PRO CÉU
--- ============================================================
-
-local function subirProCeu()
-    local cAgora = localPlayer.Character
-    if not cAgora then return end
-    local hrpAgora = cAgora:FindFirstChild("HumanoidRootPart")
-    if not hrpAgora then return end
-    local posAgora = hrpAgora.Position
-    pcall(function()
-        cAgora:PivotTo(CFrame.new(Vector3.new(posAgora.X, 150, posAgora.Z)))
-    end)
-end
-
--- ============================================================
--- ESP
--- ============================================================
-
-local espFolder = Instance.new("Folder")
-espFolder.Name = "ShadowESP"
-espFolder.Parent = workspace
-
-local espCards = {}
-
-local function clearESP()
-    for _, card in pairs(espCards) do
-        pcall(function() if card.highlight then card.highlight:Destroy() end end)
-        pcall(function() if card.holder then card.holder:Destroy() end end)
-    end
-    espCards = {}
-
-    for _, child in ipairs(espFolder:GetChildren()) do
-        if child.Name:find("Temp_") then
-            pcall(function() child:Destroy() end)
-        end
-    end
-end
-
-local function makeCard(egg)
-    local highlight = Instance.new("Highlight")
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.FillTransparency = 0.85
-    highlight.OutlineTransparency = 0.2
-    highlight.FillColor = egg.color
-    highlight.OutlineColor = egg.color
-    highlight.Parent = espFolder
-
-    local billboard = Instance.new("BillboardGui")
-    billboard.AlwaysOnTop = true
-    billboard.LightInfluence = 0
-    billboard.Size = UDim2.fromOffset(150, 32)
-    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-    billboard.MaxDistance = 2500
-    billboard.Parent = espFolder
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.fromScale(1, 1)
-    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    frame.BackgroundTransparency = 0.25
-    frame.BorderSizePixel = 0
-    frame.Parent = billboard
-
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 5)
-
-    local frameStroke = Instance.new("UIStroke", frame)
-    frameStroke.Color = egg.color
-    frameStroke.Thickness = 1
-    frameStroke.Transparency = 0.2
-    frameStroke.Parent = frame
-
-    local accent = Instance.new("Frame")
-    accent.Size = UDim2.new(0, 2, 1, -6)
-    accent.Position = UDim2.new(0, 3, 0, 3)
-    accent.BackgroundColor3 = egg.color
-    accent.BorderSizePixel = 0
-    accent.Parent = frame
-
-    Instance.new("UICorner", accent).CornerRadius = UDim.new(1, 0)
-
-    local icon = Instance.new("ImageLabel")
-    icon.Size = UDim2.fromOffset(24, 24)
-    icon.Position = UDim2.new(0, 8, 0.5, -12)
-    icon.BackgroundTransparency = 1
-    icon.ScaleType = Enum.ScaleType.Fit
-    icon.Image = egg.icon or ""
-    icon.Visible = egg.icon ~= nil
-    icon.Parent = frame
-
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, -40, 0, 13)
-    nameLabel.Position = UDim2.new(0, 36, 0, 4)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 11
-    nameLabel.TextColor3 = egg.color
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    nameLabel.Text = egg.name
-    nameLabel.Parent = frame
-
-    local info = Instance.new("TextLabel")
-    info.Size = UDim2.new(1, -40, 0, 11)
-    info.Position = UDim2.new(0, 36, 0, 17)
-    info.BackgroundTransparency = 1
-    info.Font = Enum.Font.Gotham
-    info.TextSize = 9
-    info.TextColor3 = Color3.fromRGB(200, 200, 210)
-    info.TextXAlignment = Enum.TextXAlignment.Left
-    info.TextTruncate = Enum.TextTruncate.AtEnd
-    info.Text = ("%s/s | %s"):format(rateFormat(egg.value), egg.rarity)
-    info.Parent = frame
-
-    return {
-        holder = billboard,
-        highlight = highlight,
-        frame = frame,
-        name = nameLabel,
-        info = info,
-        icon = icon,
-        stroke = frameStroke,
-        accent = accent,
-    }
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.35)
-
-        if not Config.ESPEgg and not Config.ESPEggTerreno then
-            if next(espCards) then clearESP() end
-        else
-            local list = listEggs()
-            local present = {}
-            local slots = workspace:FindFirstChild("AreaEggSlotsClient")
-            local placedRenders = workspace:FindFirstChild("PlacedEggRenders")
-
-            for _, egg in ipairs(list) do
-                local permitido
-                if egg.isBase then
-                    permitido = Config.ESPEggTerreno
-                else
-                    permitido = Config.ESPEgg
-                end
-
-                if permitido then
-                    present[egg.uid] = egg
-                    local card = espCards[egg.uid]
-                    if not card then
-                        card = makeCard(egg)
-                        espCards[egg.uid] = card
-                    end
-
-                    local hitbox
-
-                    if egg.isBase and placedRenders then
-                        local realUid = egg.uid:gsub("^base_", "")
-                        for _, child in ipairs(placedRenders:GetChildren()) do
-                            if string.find(child.Name, realUid, 1, true) then
-                                if child:IsA("Model") then
-                                    hitbox = child.PrimaryPart
-                                    if not hitbox then
-                                        for _, d in ipairs(child:GetDescendants()) do
-                                            if d:IsA("BasePart") then
-                                                hitbox = d
-                                                break
-                                            end
-                                        end
-                                    end
-                                elseif child:IsA("BasePart") then
-                                    hitbox = child
-                                end
-                                break
-                            end
-                        end
-                    elseif slots then
-                        local model = slots:FindFirstChild(egg.uid)
-                        if not model then
-                            for _, child in ipairs(slots:GetChildren()) do
-                                if string.find(child.Name, egg.uid, 1, true) then
-                                    model = child
-                                    break
-                                end
-                            end
-                        end
-                        if model then
-                            local hb = model:FindFirstChild("Hitbox")
-                                or model:FindFirstChildWhichIsA("BasePart", true)
-                            if hb and hb:IsA("BasePart") then
-                                hitbox = hb
-                            end
-                        end
-                    end
-
-                    if not hitbox and egg.pos then
-                        local tempName = "Temp_" .. egg.uid
-                        local tempPart = espFolder:FindFirstChild(tempName)
-                        if not tempPart then
-                            tempPart = Instance.new("Part")
-                            tempPart.Name = tempName
-                            tempPart.Size = Vector3.new(1, 1, 1)
-                            tempPart.Transparency = 1
-                            tempPart.Anchored = true
-                            tempPart.CanCollide = false
-                            tempPart.CanTouch = false
-                            tempPart.CanQuery = false
-                            tempPart.Parent = espFolder
-                        end
-                        pcall(function() tempPart.Position = egg.pos end)
-                        hitbox = tempPart
-                    end
-
-                    if hitbox then
-                        card.holder.Adornee = hitbox
-                        card.highlight.Adornee = hitbox
-                        card.holder.StudsOffsetWorldSpace = Vector3.new(0, 2.5, 0)
-                    end
-
-                    if card.name.Text ~= egg.name then
-                        card.name.Text = egg.name
-                    end
-                    card.name.TextColor3 = egg.color
-                    card.stroke.Color = egg.color
-                    card.accent.BackgroundColor3 = egg.color
-
-                    local infoText = ("%s/s | %s"):format(rateFormat(egg.value), egg.rarity)
-                    if card.info.Text ~= infoText then
-                        card.info.Text = infoText
-                    end
-
-                    if egg.icon then
-                        if card.icon.Image ~= egg.icon then
-                            card.icon.Image = egg.icon
-                        end
-                        if not card.icon.Visible then
-                            card.icon.Visible = true
-                        end
-                    else
-                        if card.icon.Visible then
-                            card.icon.Visible = false
-                        end
-                    end
-                end
-            end
-
-            for uid, card in pairs(espCards) do
-                if not present[uid] then
-                    pcall(function() card.highlight:Destroy() end)
-                    pcall(function() card.holder:Destroy() end)
-                    espCards[uid] = nil
-                    local temp = espFolder:FindFirstChild("Temp_" .. uid)
-                    if temp then
-                        pcall(function() temp:Destroy() end)
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- ============================================================
--- ANTI-MORTE
--- ============================================================
-
-local antiMorteAtivo = false
-local antiMorteLoop = nil
-
-local function ligarAntiMorte()
-    if antiMorteAtivo then return end
-    antiMorteAtivo = true
-
-    antiMorteLoop = RunService.Heartbeat:Connect(function()
-        if not antiMorteAtivo then return end
-
-        local char = localPlayer.Character
-        if not char then return end
-
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then return end
-
-        if hum.Health < hum.MaxHealth then
-            pcall(function() hum.Health = hum.MaxHealth end)
-        end
-
-        pcall(function() hum.BreakJointsOnDeath = false end)
-    end)
-end
-
-local function desligarAntiMorte()
-    antiMorteAtivo = false
-
-    if antiMorteLoop then
-        antiMorteLoop:Disconnect()
-        antiMorteLoop = nil
-    end
-end
-
--- ============================================================
--- TROCA HUMANOID
--- ============================================================
-
-local function trocarHumanoid(character)
-    if not character then return end
-
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-    if humanoid:GetAttribute("_trocado") then return end
-
-    local camera = workspace.CurrentCamera
-    local animateScript = character:FindFirstChild("Animate")
-
-    local walkSpeed = humanoid.WalkSpeed
-    local jumpPower = humanoid.JumpPower
-    local jumpHeight = humanoid.JumpHeight
-    local health = humanoid.Health
-    local maxHealth = humanoid.MaxHealth
-
-    humanoid:SetAttribute("_trocado", true)
-
-    if animateScript and animateScript:IsA("LocalScript") then
-        animateScript.Disabled = true
-    end
-
-    humanoid.Archivable = true
-    local newHumanoid = humanoid:Clone()
-
-    for _, child in next, newHumanoid:GetChildren() do
-        if child:IsA("Animator") then child:Destroy() end
-    end
-
-    humanoid.Name = "_OldHumanoid"
-    newHumanoid.Name = "Humanoid"
-    newHumanoid.Parent = character
-
-    local animator = Instance.new("Animator")
-    animator.Parent = newHumanoid
-
-    newHumanoid.WalkSpeed = walkSpeed
-    newHumanoid.JumpPower = jumpPower
-    newHumanoid.JumpHeight = jumpHeight
-    newHumanoid.MaxHealth = maxHealth
-    newHumanoid.Health = math.min(health, maxHealth)
-
-    pcall(function()
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
-        newHumanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
-
-        newHumanoid.UseJumpPower = true
-        if newHumanoid.JumpPower < 50 then newHumanoid.JumpPower = 50 end
-    end)
-
-    if camera then camera.CameraSubject = newHumanoid end
-    humanoid:Destroy()
-
-    pcall(function()
-        local playerScripts = localPlayer:FindFirstChild("PlayerScripts")
-        local playerModule = playerScripts and playerScripts:FindFirstChild("PlayerModule")
-        if playerModule then
-            local controls = require(playerModule):GetControls()
-            if type(controls) == "table" then controls.humanoid = newHumanoid end
-            if type(controls.OnCharacterAdded) == "function" then
-                pcall(controls.OnCharacterAdded, controls, character)
-            end
-        end
-    end)
-
-    if animateScript and animateScript:IsA("LocalScript") then
-        task.wait()
-        animateScript.Disabled = false
-    end
-
-    task.defer(function()
-        if newHumanoid.Parent then
-            newHumanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
-    end)
-end
-
-task.spawn(function()
-    task.wait(2)
-    trocarHumanoid(localPlayer.Character)
-end)
-
-localPlayer.CharacterAdded:Connect(function(character)
-    task.wait(2)
-    trocarHumanoid(character)
-end)
-
--- ============================================================
--- REFORÇO DO PULO
--- ============================================================
-
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-
-        local char = localPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                pcall(function()
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Running, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
-
-                    if hum:GetState() == Enum.HumanoidStateType.Dead then
-                        hum:ChangeState(Enum.HumanoidStateType.Running)
-                    end
-
-                    hum.UseJumpPower = true
-                    if (hum.JumpPower or 0) < 50 then hum.JumpPower = 50 end
-                end)
-            end
-        end
-    end
-end)
-
--- ============================================================
--- PEGAR OVO VIA PROMPT
--- ============================================================
-
-local function pegarOvoViaPrompt(targetPos)
-    local best
-    local bestDist = math.huge
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Enabled then
-            local p = obj.Parent
-            if p then
-                local pos
-                if p:IsA("BasePart") then
-                    pos = p.Position
-                elseif p:IsA("Model") then
-                    pos = p:GetPivot().Position
-                end
-
-                if pos then
-                    local dist = (pos - targetPos).Magnitude
-                    if dist < bestDist and dist < 40 then
-                        best = obj
-                        bestDist = dist
-                    end
-                end
-            end
-        end
-    end
-
-    if not best then return false end
-
-    pcall(function()
-        best.HoldDuration = 0
-        best.RequiresLineOfSight = false
-    end)
-
-    if typeof(fireproximityprompt) == "function" then
-        pcall(fireproximityprompt, best)
-        return true
-    end
-
-    return false
-end
-
--- ============================================================
--- PEGAR QUALQUER OVO DO MESMO TIPO
--- ============================================================
-
-local function pegarQualquerDoTipo(cat, cancelFn, tempo)
-    tempo = tempo or 4
-    local inicio = os.clock()
-
-    while os.clock() - inicio < tempo do
-        if cancelFn() then return false end
-
-        if estaSegurandoOvo() then
-            return true
-        end
-
-        local hrp = getRoot()
-        if hrp then
-            local perto = acharOvoMesmoTipoPerto(cat, hrp.Position, 60)
-            if perto and perto.pos then
-                local hum = getHum()
-                if hum then
-                    local dist = (
-                        Vector3.new(
-                            perto.pos.X,
-                            hrp.Position.Y,
-                            perto.pos.Z
-                        ) - hrp.Position
-                    ).Magnitude
-
-                    if dist > 5 then
-                        hum:MoveTo(perto.pos)
-                    else
-                        travarPersonagem()
-                        pegarOvoViaPrompt(perto.pos)
-                        pegarOvoViaPrompt(perto.pos)
-                        pegarOvoViaPrompt(perto.pos)
-                    end
-                end
-            end
-        end
-
-        RunService.Heartbeat:Wait()
-    end
-
-    return estaSegurandoOvo()
-end
-
--- ============================================================
--- ROUBA OVO
--- ============================================================
-
-local function pegarOvoSemParar(target, cancelFn)
-    local tentativasSemOvo = 0
-
-    while not cancelFn() do
-        if estaSegurandoOvo() then
-            return true
-        end
-
-        local ovo = acharOvoPorUid(target.uid)
-
-        if not ovo or not ovo.pos then
-            local hrp = getRoot()
-            if hrp then
-                local perto = acharOvoMesmoTipoPerto(
-                    target.cat,
-                    hrp.Position,
-                    50
-                )
-                if perto then
-                    target.uid = perto.uid
-                    target.pos = perto.pos
-                    ovo = perto
-                end
-            end
-        end
-
-        if not ovo or not ovo.pos then
-            tentativasSemOvo = tentativasSemOvo + 1
-            if tentativasSemOvo > 100 then
-                return false
-            end
-            task.wait(0.02)
-        else
-            tentativasSemOvo = 0
-            target.pos = ovo.pos
-
-            local hum = getHum()
-            local hrp = getRoot()
-
-            if hum and hrp then
-                local horizontal = Vector3.new(
-                    ovo.pos.X,
-                    hrp.Position.Y,
-                    ovo.pos.Z
-                )
-
-                local dist = (horizontal - hrp.Position).Magnitude
-
-                if dist > 5 then
-                    hum:MoveTo(ovo.pos)
-                else
-                    while not cancelFn() and not estaSegurandoOvo() do
-                        travarPersonagem()
-                        pegarOvoViaPrompt(ovo.pos)
-                        pegarOvoViaPrompt(ovo.pos)
-                        pegarOvoViaPrompt(ovo.pos)
-                        RunService.Heartbeat:Wait()
-                    end
-
-                    if estaSegurandoOvo() then
-                        subirProCeu()
-                        return true
-                    end
-                end
-            end
-        end
-
-        RunService.Heartbeat:Wait()
-    end
-
-    return false
-end
-
--- ============================================================
--- DROP
--- ============================================================
-
-local function droparOvo()
-    local packages = ReplicatedStorage:FindFirstChild("Packages")
-    local networking = packages and packages:FindFirstChild("Networking")
-    local remote = networking and networking:FindFirstChild(
-        "RF/EggWorld/AskFieldEggDrop"
-    )
-
-    if remote and remote:IsA("RemoteFunction") then
-        local ok = pcall(function()
-            remote:InvokeServer({ Reason = "PlayerRequest" })
-        end)
-        return ok
-    end
-
-    return false
-end
-
--- ============================================================
--- ESTEIRA
--- ============================================================
-
-local function acharEsteiraPosicao()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return nil end
-
-    local mySlot
-    local shared = ReplicatedStorage:FindFirstChild("Shared")
-    local remotes = shared and shared:FindFirstChild("Remotes")
-
-    if remotes and remotes:IsA("ModuleScript") then
-        local ok, result = pcall(require, remotes)
-        if ok and result then
-            remotes = result
-        end
-    end
-
-    if type(remotes) == "table" and remotes.Homestead and remotes.Homestead.AskState then
-        local ok, state = pcall(function()
-            return remotes.Homestead.AskState:InvokeServer()
-        end)
-
-        if ok and type(state) == "table" and type(state.OwnersBySlot) == "table" then
-            for slot, userId in pairs(state.OwnersBySlot) do
-                if tostring(userId) == tostring(localPlayer.UserId) then
-                    mySlot = tostring(slot)
-                    break
-                end
-            end
-        end
-    end
-
-    if not mySlot then return nil end
-
-    local plot = plots:FindFirstChild(mySlot)
-    if not plot then return nil end
-
-    local treadmill = plot:FindFirstChild("TreadmillBottom", true)
-    if treadmill and treadmill:IsA("BasePart") then
-        return treadmill.Position
-    end
-
-    treadmill = plot:FindFirstChild("TreadmillUpgrade", true)
-    if treadmill then
-        local part
-        if treadmill:IsA("BasePart") then
-            part = treadmill
-        else
-            part = treadmill:FindFirstChildWhichIsA("BasePart", true)
-        end
-        if part then
-            return part.Position
-        end
-    end
-
-    return nil
-end
-
-local function sairDaEsteira(treadmillPos)
-    local packages = ReplicatedStorage:FindFirstChild("Packages")
-    local networking = packages and packages:FindFirstChild("Networking")
-    local askDoff = networking and networking:FindFirstChild(
-        "RF/Treadmill/AskDoff"
-    )
-
-    if askDoff then
-        pcall(function()
-            askDoff:InvokeServer()
-        end)
-    end
-
-    local hum = getHum()
-    if hum then
-        pcall(function()
-            hum.PlatformStand = false
-            hum.Sit = false
-            hum.Jump = true
-            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-            hum:ChangeState(Enum.HumanoidStateType.Running)
-        end)
-    end
-
-    task.wait(0.08)
-
-    local hrp = getRoot()
-    if hrp and treadmillPos then
-        if (hrp.Position - treadmillPos).Magnitude < 6 then
-            local longe = Vector3.new(
-                treadmillPos.X + 15,
-                treadmillPos.Y + 3,
-                treadmillPos.Z
-            )
-
-            local char = localPlayer.Character
-            if char then
-                pcall(function()
-                    char:PivotTo(CFrame.new(longe))
-                end)
-            end
-        end
-    end
-end
-
--- ============================================================
--- MOVIMENTO DE SEGURANÇA
--- ============================================================
-
-local ALTURA_SEGURA = 120
-local TEMPO_SUBIDA = 0.12
-local TEMPO_HORIZONTAL = 0.18
-local TEMPO_DESCIDA = 0.12
-
-local function cancelarMovimento(cancelFn)
-    return cancelFn and cancelFn()
-end
-
-local function subirAteDestino(destino, cancelFn)
-    local char = localPlayer.Character
-    if not char then return false end
-
-    local hrp = getRoot()
-    if not hrp then return false end
-
-    local inicio = hrp.Position
-
-    local t0 = os.clock()
-    while os.clock() - t0 < TEMPO_SUBIDA do
-        if cancelarMovimento(cancelFn) then return false end
-
-        local alpha = (os.clock() - t0) / TEMPO_SUBIDA
-        local y = inicio.Y + (ALTURA_SEGURA - inicio.Y) * alpha
-
-        pcall(function()
-            char:PivotTo(CFrame.new(inicio.X, y, inicio.Z))
-        end)
-
-        RunService.Heartbeat:Wait()
-    end
-
-    local t1 = os.clock()
-    while os.clock() - t1 < TEMPO_HORIZONTAL do
-        if cancelarMovimento(cancelFn) then return false end
-
-        local alpha = (os.clock() - t1) / TEMPO_HORIZONTAL
-        local x = inicio.X + (destino.X - inicio.X) * alpha
-        local z = inicio.Z + (destino.Z - inicio.Z) * alpha
-
-        pcall(function()
-            char:PivotTo(CFrame.new(x, ALTURA_SEGURA, z))
-        end)
-
-        RunService.Heartbeat:Wait()
-    end
-
-    local t2 = os.clock()
-    while os.clock() - t2 < TEMPO_DESCIDA do
-        if cancelarMovimento(cancelFn) then return false end
-
-        local alpha = (os.clock() - t2) / TEMPO_DESCIDA
-        local y = ALTURA_SEGURA + (destino.Y - ALTURA_SEGURA) * alpha
-
-        pcall(function()
-            char:PivotTo(CFrame.new(destino.X, y, destino.Z))
-        end)
-
-        RunService.Heartbeat:Wait()
-    end
-
-    pcall(function()
-        char:PivotTo(CFrame.new(destino))
-    end)
-
-    return true
-end
-
--- ============================================================
--- PEGAR UID ESPECÍFICO
--- ============================================================
-
-local function pegarUidEspecifico(
-    uidAlvo,
-    target,
-    cancelFn,
-    timeout
+-- Loader visual integrado à tela ShadowHubAtualizando.
+-- Escolha no código: 1, 2, 3 ... 100.
+-- Exemplo: 20 carrega de 0% até 20% e permanece em 20%.
+local SHADOW_HUB_LOADING_TARGET = 5
+SHADOW_HUB_LOADING_TARGET = math.clamp(
+    math.floor(tonumber(SHADOW_HUB_LOADING_TARGET) or 100), 1, 100
 )
-    timeout = timeout or 8
-    local inicio = os.clock()
-
-    while os.clock() - inicio < timeout do
-        if cancelFn() then return false end
-
-        local carregando, carregadoUid = estaSegurandoOvo()
-
-        if carregando then
-            if not uidAlvo or not carregadoUid or tostring(carregadoUid) == tostring(uidAlvo) then
-                return true
-            end
-        end
-
-        local ovo = acharOvoPorUid(uidAlvo)
-
-        if not ovo or not ovo.pos then
-            local hrp = getRoot()
-            if hrp and target and target.cat then
-                local perto = acharOvoMesmoTipoPerto(
-                    target.cat,
-                    hrp.Position,
-                    50
-                )
-                if perto then
-                    ovo = perto
-                    uidAlvo = perto.uid
-                end
-            end
-        end
-
-        if ovo and ovo.pos then
-            local hum = getHum()
-            local hrp = getRoot()
-
-            if hum and hrp then
-                local dist = (
-                    Vector3.new(
-                        ovo.pos.X,
-                        hrp.Position.Y,
-                        ovo.pos.Z
-                    ) - hrp.Position
-                ).Magnitude
-
-                if dist > 5 then
-                    hum:MoveTo(ovo.pos)
-                else
-                    while not cancelFn() and not estaSegurandoOvo() and os.clock() - inicio < timeout do
-                        travarPersonagem()
-                        pegarOvoViaPrompt(ovo.pos)
-                        pegarOvoViaPrompt(ovo.pos)
-                        pegarOvoViaPrompt(ovo.pos)
-                        RunService.Heartbeat:Wait()
-                    end
-
-                    if estaSegurandoOvo() then
-                        subirProCeu()
-                        return true
-                    end
-                end
-            end
-        end
-
-        RunService.Heartbeat:Wait()
-    end
-
-    return estaSegurandoOvo()
-end
-
--- ============================================================
--- CICLO MULTI-ÁREA
--- ============================================================
-
-function rodarCicloMultiArea()
-    Roubo.Running = true
-    local cycleVersion = Roubo.TargetVersion
-
-    local cancelFn = function()
-        if not Roubo.Enabled or not Roubo.Running then
-            return true
-        end
-        if Roubo.TargetVersion ~= cycleVersion and not Carregando.IsCarrying then
-            return true
-        end
-        return false
-    end
-
-    ligarAntiMorte()
-
-    if Roubo.LockedUid then
-        Roubo.SelectedUid = Roubo.LockedUid
-        Roubo.SelectedCat = Roubo.LockedCat
-    end
-
-    if not Roubo.SelectedUid then
-        local lista = listCampoEggs()
-        if #lista > 0 then
-            Roubo.SelectedUid = lista[1].uid
-            Roubo.SelectedCat = lista[1].cat
-            Roubo.LockedUid = lista[1].uid
-            Roubo.LockedCat = lista[1].cat
-        end
-    end
-
-    local target = acharOvoPorUid(Roubo.SelectedUid)
-
-    if not target and Roubo.LockedCat then
-        local hrp = getRoot()
-        if hrp then
-            local perto = acharOvoMesmoTipoPerto(Roubo.LockedCat, hrp.Position, 200)
-            if perto then
-                target = perto
-                Roubo.SelectedUid = perto.uid
-            end
-        end
-    end
-
-    if not target then
-        desligarAntiMorte()
-        Roubo.Running = false
-        return
-    end
-
-    local categoriaTravada = Roubo.LockedCat or target.cat
-
-    local areaIndex, areaAtual = detectarAreaAtual()
-
-    if not areaIndex then
-        desligarAntiMorte()
-        Roubo.Running = false
-        return
-    end
-
-    if areaIndex == SAFE_INDEX then
-        desligarAntiMorte()
-        Roubo.Running = false
-        return
-    end
-
-    if not pegarOvoSemParar(target, cancelFn) then
-        desligarAntiMorte()
-        Roubo.Running = false
-        return
-    end
-
-    areaIndex, areaAtual = detectarAreaAtual()
-
-    if not areaIndex then
-        desligarAntiMorte()
-        Roubo.Running = false
-        return
-    end
-
-    local lastDestinoIndex = nil
-
-    while Roubo.Enabled and not cancelFn() do
-        local currentIndex
-
-        if lastDestinoIndex then
-            currentIndex = lastDestinoIndex
-            lastDestinoIndex = nil
-        else
-            currentIndex = detectarAreaAtual()
-        end
-
-        if not currentIndex then break end
-        if currentIndex == SAFE_INDEX then break end
-
-        local destinoIndex, destino = proximoDestino(currentIndex)
-        if not destino then break end
-
-        if not subirAteDestino(destino.pos, cancelFn) then break end
-
-        -- ⚡ DELAY CURTO ANTES DE DROPAR
-        task.wait(0.15)
-
-        if destinoIndex == SAFE_INDEX then break end
-
-        if not estaSegurandoOvo() then break end
-
-        -- ⚡ TRAVA NO DESTINO SÓ 3 FRAMES
-        local charDrop = localPlayer.Character
-        local humDrop = getHum()
-        local hrpDrop = getRoot()
-
-        if charDrop and humDrop and hrpDrop then
-            pcall(function()
-                charDrop:PivotTo(CFrame.new(destino))
-            end)
-
-            pcall(function()
-                hrpDrop.AssemblyLinearVelocity = Vector3.zero
-                hrpDrop.AssemblyAngularVelocity = Vector3.zero
-                humDrop:Move(Vector3.zero, false)
-                humDrop:MoveTo(destino)
-            end)
-
-            for _ = 1, 3 do
-                pcall(function()
-                    charDrop:PivotTo(CFrame.new(destino))
-                end)
-
-                local h = getRoot()
-                if h then
-                    pcall(function()
-                        h.AssemblyLinearVelocity = Vector3.zero
-                        h.AssemblyAngularVelocity = Vector3.zero
-                    end)
-                end
-
-                RunService.Heartbeat:Wait()
-            end
-        end
-
-        local hrpAntesDrop = getRoot()
-        local posDrop = hrpAntesDrop and hrpAntesDrop.Position
-
-        local ovosAntes = {}
-        for _, egg in ipairs(listEggs()) do
-            ovosAntes[egg.uid] = true
-        end
-
-        local _, uidCarregando = estaSegurandoOvo()
-
-        -- ⚡ DROPA IMEDIATAMENTE
-        droparOvo()
-
-        -- ⚡ SÓ 2 FRAMES DEPOIS DO DROP
-        local charDepois = localPlayer.Character
-        if charDepois and posDrop then
-            for _ = 1, 2 do
-                local humAtual = getHum()
-                if humAtual then
-                    pcall(function()
-                        humAtual:Move(Vector3.zero, false)
-                        humAtual:MoveTo(posDrop)
-                    end)
-                end
-                pcall(function()
-                    charDepois:PivotTo(CFrame.new(posDrop))
-                end)
-                RunService.Heartbeat:Wait()
-            end
-        end
-
-        local uidDropado
-
-        -- ⚡ TIMEOUT 0.5s PRA ACHAR O UID
-        if uidCarregando then
-            local tentativa = os.clock()
-            while not uidDropado and os.clock() - tentativa < 0.5 do
-                if acharOvoPorUid(uidCarregando) then
-                    uidDropado = uidCarregando
-                    break
-                end
-                task.wait(0.01)
-            end
-        end
-
-        if not uidDropado then
-            local tentativa = os.clock()
-            while not uidDropado and os.clock() - tentativa < 0.5 do
-                for _, egg in ipairs(listEggs()) do
-                    if not ovosAntes[egg.uid] then
-                        uidDropado = egg.uid
-                        break
-                    end
-                end
-                if not uidDropado then
-                    task.wait(0.01)
-                end
-            end
-        end
-
-        -- ⚡ FALLBACK POR POSIÇÃO: 0.3s, raio 15
-        if not uidDropado and posDrop then
-            local tentativa = os.clock()
-            while not uidDropado and os.clock() - tentativa < 0.3 do
-                local maisPerto
-                local menorDist = 15
-
-                for _, egg in ipairs(listEggs()) do
-                    if egg.cat == categoriaTravada and egg.pos and not egg.isBase then
-                        local dist = (egg.pos - posDrop).Magnitude
-                        if dist < menorDist then
-                            menorDist = dist
-                            maisPerto = egg
-                        end
-                    end
-                end
-
-                if maisPerto then
-                    uidDropado = maisPerto.uid
-                    break
-                end
-
-                task.wait(0.01)
-            end
-        end
-
-        local pegou = false
-
-        -- ⚡ TIMEOUT 2s PRA PEGAR
-        if uidDropado then
-            pegou = pegarUidEspecifico(uidDropado, target, cancelFn, 2)
-            if pegou then
-                target.uid = uidDropado
-                Roubo.SelectedUid = uidDropado
-            end
-        end
-
-        if not pegou then
-            pegou = pegarQualquerDoTipo(categoriaTravada, cancelFn, 2)
-        end
-
-        if not pegou then
-            break
-        end
-
-        lastDestinoIndex = destinoIndex
-
-        task.wait(0.02)
-    end
-
-    desligarAntiMorte()
-    Roubo.Running = false
-end
-
--- ============================================================
--- ANTI-TRAP
--- ============================================================
-
-local canTouchOriginais = {}
-local antiTrapConnections = {}
-
-local function desativarTouch(inst)
-    if not Config.AntiTrap then return end
-    if inst:IsA("BasePart") and canTouchOriginais[inst] == nil then
-        canTouchOriginais[inst] = inst.CanTouch
-        pcall(function() inst.CanTouch = false end)
-    end
-end
-
-local function processarTrap(trap)
-    if not Config.AntiTrap or not trap then return end
-    desativarTouch(trap)
-    for _, d in ipairs(trap:GetDescendants()) do
-        desativarTouch(d)
-    end
-end
-
-local function ligarAntiTrap()
-    for _, trap in ipairs(CollectionService:GetTagged("PlacedTrap")) do
-        processarTrap(trap)
-    end
-
-    if not antiTrapConnections.added then
-        antiTrapConnections.added = CollectionService:GetInstanceAddedSignal("PlacedTrap"):Connect(function(trap)
-            task.defer(function()
-                if Config.AntiTrap then processarTrap(trap) end
-            end)
-        end)
-    end
-
-    if not antiTrapConnections.descendant then
-        antiTrapConnections.descendant = workspace.DescendantAdded:Connect(function(d)
-            if not Config.AntiTrap then return end
-            local parentObj = d.Parent
-            while parentObj do
-                if parentObj:HasTag("PlacedTrap") then
-                    desativarTouch(d)
-                    break
-                end
-                parentObj = parentObj.Parent
-            end
-        end)
-    end
-end
-
-local function desligarAntiTrap()
-    for instance, original in pairs(canTouchOriginais) do
-        if instance and instance.Parent and instance:IsA("BasePart") then
-            pcall(function() instance.CanTouch = original end)
-        end
-        canTouchOriginais[instance] = nil
-    end
-
-    for key, conn in pairs(antiTrapConnections) do
-        pcall(function() conn:Disconnect() end)
-        antiTrapConnections[key] = nil
-    end
-end
-
-local function setAntiTrap(enabled)
-    Config.AntiTrap = enabled
-    if enabled then
-        ligarAntiTrap()
-    else
-        desligarAntiTrap()
-    end
-end
-
--- ============================================================
--- INSTANT CLICK
--- ============================================================
-
-local instantClickOriginais = {}
-local instantClickConnection
-
-local function aplicarInstantClick(obj)
-    if not Config.InstantClick then return end
-    if obj:IsA("ProximityPrompt") then
-        if not instantClickOriginais[obj] then
-            instantClickOriginais[obj] = {
-                HoldDuration = obj.HoldDuration,
-                RequiresLineOfSight = obj.RequiresLineOfSight
-            }
-        end
-        pcall(function()
-            obj.HoldDuration = 0
-            obj.RequiresLineOfSight = false
-        end)
-    end
-end
-
-local function ligarInstantClick()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        aplicarInstantClick(obj)
-    end
-    if not instantClickConnection then
-        instantClickConnection = workspace.DescendantAdded:Connect(function(obj)
-            if Config.InstantClick then aplicarInstantClick(obj) end
-        end)
-    end
-end
-
-local function desligarInstantClick()
-    for obj, original in pairs(instantClickOriginais) do
-        if obj and obj.Parent and obj:IsA("ProximityPrompt") then
-            pcall(function()
-                obj.HoldDuration = original.HoldDuration
-                obj.RequiresLineOfSight = original.RequiresLineOfSight
-            end)
-        end
-        instantClickOriginais[obj] = nil
-    end
-end
-
-local function setInstantClick(enabled)
-    Config.InstantClick = enabled
-    if enabled then
-        ligarInstantClick()
-    else
-        desligarInstantClick()
-    end
-end
-
-ligarAntiTrap()
-ligarInstantClick()
-
--- ============================================================
--- GUI
--- ============================================================
-
-local clickSound = Instance.new("Sound")
-clickSound.SoundId = "rbxassetid://100671636189844"
-clickSound.Volume = 1.25
-clickSound.Parent = SoundService
-
-local function playClick()
-    pcall(function()
-        clickSound:Stop()
-        clickSound.TimePosition = 0
-        clickSound:Play()
-    end)
-end
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "ShadowHubCompactGui"
-gui.ResetOnSpawn = false
-gui.DisplayOrder = 1000
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = parent
-
--- ============================================================
--- BOTÃO FLUTUANTE
--- ============================================================
-
-local icon = Instance.new("ImageButton")
-icon.Size = UDim2.fromOffset(42, 42)
-icon.Position = UDim2.new(0, 14, 0.5, -21)
-icon.BackgroundColor3 = Color3.fromRGB(7, 7, 9)
-icon.BackgroundTransparency = 0.08
-icon.Image = "rbxassetid://92667850616234"
-icon.ScaleType = Enum.ScaleType.Crop
-icon.AutoButtonColor = false
-icon.ZIndex = 30
-icon.Parent = gui
-
-Instance.new("UICorner", icon).CornerRadius = UDim.new(1, 0)
-
-local iconStroke = Instance.new("UIStroke", icon)
-iconStroke.Color = Color3.fromRGB(150, 70, 255)
-iconStroke.Thickness = 1.5
-
--- ============================================================
--- PAINEL
--- ============================================================
-
-local panel = Instance.new("Frame")
-panel.Size = UDim2.fromOffset(262, 185)
-panel.Position = UDim2.new(0.5, 140, 0.5, -87)
-panel.BackgroundColor3 = Color3.fromRGB(6, 6, 8)
-panel.BackgroundTransparency = 0.08
-panel.ZIndex = 10
-panel.Parent = gui
-panel.Active = true
-
-local panelScale = Instance.new("UIScale", panel)
-panelScale.Scale = 0.94
-
-Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 12)
-
-local panelStroke = Instance.new("UIStroke", panel)
-panelStroke.Color = Color3.fromRGB(100, 45, 180)
-panelStroke.Thickness = 1
-
--- ============================================================
--- HEADER
--- ============================================================
-
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, -20, 0, 38)
-header.Position = UDim2.fromOffset(10, 8)
-header.BackgroundTransparency = 1
-header.ZIndex = 11
-header.Parent = panel
-
-local logo = Instance.new("ImageLabel")
-logo.Size = UDim2.fromOffset(26, 26)
-logo.Position = UDim2.fromOffset(0, 5)
-logo.BackgroundTransparency = 1
-logo.Image = "rbxassetid://92667850616234"
-logo.ScaleType = Enum.ScaleType.Crop
-logo.ZIndex = 12
-logo.Parent = header
-
-Instance.new("UICorner", logo).CornerRadius = UDim.new(1, 0)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -60, 0, 19)
-title.Position = UDim2.fromOffset(34, 1)
-title.BackgroundTransparency = 1
-title.Text = "SHADOW HUB"
-title.TextColor3 = Color3.fromRGB(235, 235, 240)
-title.TextSize = 15
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.ZIndex = 12
-title.Parent = header
-
-local toggleConfigButton = Instance.new("TextButton")
-toggleConfigButton.Size = UDim2.fromOffset(22, 22)
-toggleConfigButton.Position = UDim2.new(1, -26, 0, 2)
-toggleConfigButton.BackgroundColor3 = Color3.fromRGB(20, 18, 26)
-toggleConfigButton.BorderSizePixel = 0
-toggleConfigButton.Text = "v"
-toggleConfigButton.Font = Enum.Font.GothamBold
-toggleConfigButton.TextSize = 13
-toggleConfigButton.TextColor3 = Color3.fromRGB(180, 130, 255)
-toggleConfigButton.AutoButtonColor = false
-toggleConfigButton.ZIndex = 14
-toggleConfigButton.Parent = header
-
-Instance.new("UICorner", toggleConfigButton).CornerRadius = UDim.new(0, 6)
-
-local toggleConfigStroke = Instance.new("UIStroke", toggleConfigButton)
-toggleConfigStroke.Color = Color3.fromRGB(80, 35, 140)
-toggleConfigStroke.Thickness = 1
-
-local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1, -36, 0, 14)
-subtitle.Position = UDim2.fromOffset(35, 20)
-subtitle.BackgroundTransparency = 1
-subtitle.Text = "Shadow Hub V1"
-subtitle.TextColor3 = Color3.fromRGB(120, 115, 130)
-subtitle.TextSize = 8
-subtitle.Font = Enum.Font.GothamMedium
-subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.ZIndex = 12
-subtitle.Parent = header
-
-local line = Instance.new("Frame")
-line.Size = UDim2.new(1, -20, 0, 1)
-line.Position = UDim2.fromOffset(10, 48)
-line.BackgroundColor3 = Color3.fromRGB(65, 30, 100)
-line.BorderSizePixel = 0
-line.ZIndex = 11
-line.Parent = panel
-
--- ============================================================
--- EGG BOX
--- ============================================================
-
-local eggBox = Instance.new("Frame")
-eggBox.Size = UDim2.new(1, -20, 0, 54)
-eggBox.Position = UDim2.fromOffset(10, 56)
-eggBox.BackgroundColor3 = Color3.fromRGB(10, 9, 14)
-eggBox.ZIndex = 11
-eggBox.Parent = panel
-
-Instance.new("UICorner", eggBox).CornerRadius = UDim.new(0, 11)
-
-local eggStroke = Instance.new("UIStroke", eggBox)
-eggStroke.Color = Color3.fromRGB(80, 35, 140)
-eggStroke.Thickness = 1
-
-local eggIcon = Instance.new("ImageLabel")
-eggIcon.Size = UDim2.fromOffset(39, 39)
-eggIcon.Position = UDim2.fromOffset(5, 7)
-eggIcon.BackgroundColor3 = Color3.fromRGB(3, 3, 5)
-eggIcon.BackgroundTransparency = 0
-eggIcon.ZIndex = 12
-eggIcon.Parent = eggBox
-
-Instance.new("UICorner", eggIcon).CornerRadius = UDim.new(0, 7)
-
-local best = Instance.new("TextLabel")
-best.Size = UDim2.new(1, -55, 0, 12)
-best.Position = UDim2.fromOffset(50, 7)
-best.BackgroundTransparency = 1
-best.Text = "OVO SELECIONADO"
-best.TextColor3 = Color3.fromRGB(120, 115, 130)
-best.TextSize = 8
-best.Font = Enum.Font.GothamBold
-best.TextXAlignment = Enum.TextXAlignment.Left
-best.ZIndex = 12
-best.Parent = eggBox
-
-local eggName = Instance.new("TextLabel")
-eggName.Size = UDim2.new(1, -55, 0, 19)
-eggName.Position = UDim2.fromOffset(50, 20)
-eggName.BackgroundTransparency = 1
-eggName.Text = "Nenhum ovo selecionado"
-eggName.TextColor3 = Color3.fromRGB(235, 235, 240)
-eggName.TextSize = 12
-eggName.Font = Enum.Font.GothamBold
-eggName.TextXAlignment = Enum.TextXAlignment.Left
-eggName.TextTruncate = Enum.TextTruncate.AtEnd
-eggName.ZIndex = 12
-eggName.Parent = eggBox
-
-local eggInfo = Instance.new("TextLabel")
-eggInfo.Size = UDim2.new(1, -55, 0, 11)
-eggInfo.Position = UDim2.fromOffset(50, 38)
-eggInfo.BackgroundTransparency = 1
-eggInfo.Text = "Selecione um ovo"
-eggInfo.TextColor3 = Color3.fromRGB(120, 115, 130)
-eggInfo.TextSize = 8
-eggInfo.Font = Enum.Font.GothamMedium
-eggInfo.TextXAlignment = Enum.TextXAlignment.Left
-eggInfo.TextTruncate = Enum.TextTruncate.AtEnd
-eggInfo.ZIndex = 12
-eggInfo.Parent = eggBox
-
-local expand = Instance.new("TextButton")
-expand.Size = UDim2.fromOffset(28, 30)
-expand.Position = UDim2.new(1, -34, 0, 12)
-expand.BackgroundTransparency = 1
-expand.Text = "▼"
-expand.TextColor3 = Color3.fromRGB(180, 130, 255)
-expand.TextSize = 14
-expand.Font = Enum.Font.GothamBold
-expand.ZIndex = 13
-expand.Parent = eggBox
-
--- ============================================================
--- LISTA
--- ============================================================
-
-local list = Instance.new("ScrollingFrame")
-list.Size = UDim2.new(1, -20, 0, 103)
-list.Position = UDim2.fromOffset(10, 113)
-list.BackgroundColor3 = Color3.fromRGB(8, 7, 11)
-list.Visible = false
-list.ZIndex = 20
-list.Parent = panel
-list.ScrollBarThickness = 3
-list.CanvasSize = UDim2.new(0, 0, 0, 0)
-list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-Instance.new("UICorner", list).CornerRadius = UDim.new(0, 9)
-
-local listLayout = Instance.new("UIListLayout", list)
-listLayout.Padding = UDim.new(0, 2)
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local listPadding = Instance.new("UIPadding", list)
-listPadding.PaddingTop = UDim.new(0, 4)
-listPadding.PaddingLeft = UDim.new(0, 5)
-listPadding.PaddingRight = UDim.new(0, 5)
-listPadding.PaddingBottom = UDim.new(0, 4)
-
--- ============================================================
--- MODE BOX
--- ============================================================
-
-local modeBox = Instance.new("Frame")
-modeBox.Size = UDim2.new(1, -20, 0, 51)
-modeBox.Position = UDim2.fromOffset(10, 118)
-modeBox.BackgroundColor3 = Color3.fromRGB(8, 7, 11)
-modeBox.ZIndex = 11
-modeBox.Parent = panel
-
-Instance.new("UICorner", modeBox).CornerRadius = UDim.new(0, 11)
-
-local modeTitle = Instance.new("TextLabel")
-modeTitle.Size = UDim2.new(1, -100, 0, 17)
-modeTitle.Position = UDim2.fromOffset(11, 8)
-modeTitle.BackgroundTransparency = 1
-modeTitle.Text = "AUTO STEAL"
-modeTitle.TextColor3 = Color3.fromRGB(235, 235, 240)
-modeTitle.TextSize = 12
-modeTitle.Font = Enum.Font.GothamBold
-modeTitle.TextXAlignment = Enum.TextXAlignment.Left
-modeTitle.ZIndex = 12
-modeTitle.Parent = modeBox
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -100, 0, 13)
-status.Position = UDim2.fromOffset(11, 27)
-status.BackgroundTransparency = 1
-status.Text = "Desligado"
-status.TextColor3 = Color3.fromRGB(120, 115, 130)
-status.TextSize = 8
-status.Font = Enum.Font.GothamMedium
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.ZIndex = 12
-status.Parent = modeBox
-
-local toggle = Instance.new("TextButton")
-toggle.Size = UDim2.fromOffset(43, 24)
-toggle.Position = UDim2.new(1, -53, 0, 13)
-toggle.BackgroundColor3 = Color3.fromRGB(32, 28, 38)
-toggle.Text = ""
-toggle.ZIndex = 12
-toggle.Parent = modeBox
-
-Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
-
-local knob = Instance.new("Frame")
-knob.Size = UDim2.fromOffset(18, 18)
-knob.Position = UDim2.fromOffset(3, 3)
-knob.BackgroundColor3 = Color3.fromRGB(185, 180, 195)
-knob.BorderSizePixel = 0
-knob.ZIndex = 13
-knob.Parent = toggle
-
-Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
--- ============================================================
--- CONFIG PANEL
--- ============================================================
-
-local configPanel = Instance.new("Frame")
-configPanel.Size = UDim2.fromOffset(240, 220)
-configPanel.Position = UDim2.new(0.5, -380, 0.5, -110)
-configPanel.BackgroundColor3 = Color3.fromRGB(6, 6, 8)
-configPanel.BackgroundTransparency = 0.08
-configPanel.ZIndex = 40
-configPanel.Visible = false
-configPanel.Active = true
-configPanel.Parent = gui
-
-Instance.new("UICorner", configPanel).CornerRadius = UDim.new(0, 12)
-
-local configStroke = Instance.new("UIStroke", configPanel)
-configStroke.Color = Color3.fromRGB(100, 45, 180)
-configStroke.Thickness = 1
-
-local configTitle = Instance.new("TextLabel")
-configTitle.Size = UDim2.new(1, -20, 0, 22)
-configTitle.Position = UDim2.fromOffset(10, 8)
-configTitle.BackgroundTransparency = 1
-configTitle.Text = "CONFIGURAÇÃO"
-configTitle.TextColor3 = Color3.fromRGB(235, 235, 240)
-configTitle.TextSize = 12
-configTitle.Font = Enum.Font.GothamBold
-configTitle.TextXAlignment = Enum.TextXAlignment.Left
-configTitle.ZIndex = 41
-configTitle.Parent = configPanel
-
-local configLine = Instance.new("Frame")
-configLine.Size = UDim2.new(1, -20, 0, 1)
-configLine.Position = UDim2.fromOffset(10, 34)
-configLine.BackgroundColor3 = Color3.fromRGB(65, 30, 100)
-configLine.BorderSizePixel = 0
-configLine.ZIndex = 41
-configLine.Parent = configPanel
-
-local configList = Instance.new("Frame")
-configList.Size = UDim2.new(1, -20, 1, -45)
-configList.Position = UDim2.fromOffset(10, 40)
-configList.BackgroundTransparency = 1
-configList.ZIndex = 41
-configList.ClipsDescendants = true
-configList.Parent = configPanel
-
-local configLayout = Instance.new("UIListLayout", configList)
-configLayout.Padding = UDim.new(0, 6)
-configLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local function criarConfigToggle(nome, ordem, valorInicial, callback)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 32)
-    row.BackgroundColor3 = Color3.fromRGB(15, 12, 22)
-    row.ZIndex = 42
-    row.LayoutOrder = ordem
-    row.Parent = configList
-
-    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -55, 1, 0)
-    label.Position = UDim2.fromOffset(10, 0)
-    label.BackgroundTransparency = 1
-    label.Text = nome
-    label.TextColor3 = Color3.fromRGB(235, 235, 240)
-    label.TextSize = 10
-    label.Font = Enum.Font.GothamMedium
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 43
-    label.Parent = row
-
-    local t = Instance.new("TextButton")
-    t.Size = UDim2.fromOffset(38, 20)
-    t.Position = UDim2.new(1, -48, 0.5, -10)
-    t.BackgroundColor3 = valorInicial and Color3.fromRGB(120, 45, 220) or Color3.fromRGB(32, 28, 38)
-    t.Text = ""
-    t.AutoButtonColor = false
-    t.ZIndex = 43
-    t.Parent = row
-
-    Instance.new("UICorner", t).CornerRadius = UDim.new(1, 0)
-
-    local k = Instance.new("Frame")
-    k.Size = UDim2.fromOffset(16, 16)
-    k.Position = valorInicial and UDim2.new(1, -18, 0.5, -8) or UDim2.fromOffset(2, 2)
-    k.BackgroundColor3 = valorInicial and Color3.fromRGB(245, 240, 255) or Color3.fromRGB(185, 180, 195)
-    k.BorderSizePixel = 0
-    k.ZIndex = 44
-    k.Parent = t
-
-    Instance.new("UICorner", k).CornerRadius = UDim.new(1, 0)
-
-    local estado = valorInicial
-
-    t.MouseButton1Click:Connect(function()
-        playClick()
-        estado = not estado
-
-        t.BackgroundColor3 = estado and Color3.fromRGB(120, 45, 220) or Color3.fromRGB(32, 28, 38)
-        k.BackgroundColor3 = estado and Color3.fromRGB(245, 240, 255) or Color3.fromRGB(185, 180, 195)
-
-        TweenService:Create(
-            k,
-            TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-            { Position = estado and UDim2.new(1, -18, 0.5, -8) or UDim2.fromOffset(2, 2) }
-        ):Play()
-
-        if callback then
-            pcall(callback, estado)
-        end
-    end)
-end
-
-criarConfigToggle("ANTI TRAP", 1, Config.AntiTrap, setAntiTrap)
-criarConfigToggle("INSTANT CLICK", 2, Config.InstantClick, setInstantClick)
-criarConfigToggle("ESP EGG", 3, Config.ESPEgg, function(v) Config.ESPEgg = v end)
-criarConfigToggle("ESP EGG TERRENO", 4, Config.ESPEggTerreno, function(v) Config.ESPEggTerreno = v end)
-
--- ============================================================
--- DRAG DO CONFIG PANEL
--- ============================================================
-
-local configDragBar = Instance.new("TextButton")
-configDragBar.Size = UDim2.new(1, -20, 0, 30)
-configDragBar.Position = UDim2.fromOffset(10, 4)
-configDragBar.BackgroundTransparency = 1
-configDragBar.Text = ""
-configDragBar.ZIndex = 60
-configDragBar.Parent = configPanel
-
-local draggingConfig = false
-local dragConfigStart
-local startConfigPos
-
-configDragBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-        draggingConfig = true
-        dragConfigStart = input.Position
-        startConfigPos = configPanel.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                draggingConfig = false
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if not draggingConfig then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement
-        and input.UserInputType ~= Enum.UserInputType.Touch then return end
-
-    local delta = input.Position - dragConfigStart
-
-    configPanel.Position = UDim2.new(
-        startConfigPos.X.Scale,
-        startConfigPos.X.Offset + delta.X,
-        startConfigPos.Y.Scale,
-        startConfigPos.Y.Offset + delta.Y
-    )
-end)
-
--- ============================================================
--- ABRIR / FECHAR CONFIG
--- ============================================================
-
-local configOpen = false
-
-local function setConfigOpen(open)
-    if configOpen == open then return end
-    configOpen = open
-    playClick()
-
-    if open then
-        configPanel.Visible = true
-        configPanel.BackgroundTransparency = 1
-
-        local startPos = configPanel.Position
-        configPanel.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset,
-            startPos.Y.Scale,
-            startPos.Y.Offset + 15
-        )
-
-        TweenService:Create(
-            configPanel,
-            TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-            { Position = startPos, BackgroundTransparency = 0.08 }
-        ):Play()
-
-        toggleConfigButton.Text = "^"
-    else
-        local tween = TweenService:Create(
-            configPanel,
-            TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
-            { BackgroundTransparency = 1 }
-        )
-        tween:Play()
-        tween.Completed:Connect(function()
-            if not configOpen then
-                configPanel.Visible = false
-                configPanel.BackgroundTransparency = 0.08
-            end
-        end)
-
-        toggleConfigButton.Text = "v"
-    end
-end
-
-toggleConfigButton.MouseButton1Click:Connect(function()
-    setConfigOpen(not configOpen)
-end)
-
--- ============================================================
--- TOGGLE
--- ============================================================
-
-local toggleTween = TweenInfo.new(
-    0.18,
-    Enum.EasingStyle.Quart,
-    Enum.EasingDirection.Out
-)
-
-local function animarToggle(ativo)
-    toggle.BackgroundColor3 = ativo and Color3.fromRGB(120, 45, 220) or Color3.fromRGB(32, 28, 38)
-    knob.BackgroundColor3 = ativo and Color3.fromRGB(245, 240, 255) or Color3.fromRGB(185, 180, 195)
-
-    TweenService:Create(
-        knob,
-        toggleTween,
-        {
-            Position = ativo and UDim2.new(1, -21, 0.5, -9) or UDim2.fromOffset(3, 3)
-        }
-    ):Play()
-
-    status.Text = ativo and "ROUBANDO..." or "Desligado"
-end
-
--- ============================================================
--- LISTA VISUAL
--- ============================================================
-
-local currentCards = {}
-
-local function limparLista()
-    for _, card in ipairs(currentCards) do
-        if card and card.Parent then
-            card:Destroy()
-        end
-    end
-    currentCards = {}
-end
-
-local function selecionarOvoAuto(egg)
-    Roubo.SelectedUid = egg.uid
-    Roubo.SelectedCat = egg.cat
-    Roubo.LockedUid = egg.uid
-    Roubo.LockedCat = egg.cat
-    Roubo.TargetVersion = Roubo.TargetVersion + 1
-
-    eggName.Text = egg.name
-    eggInfo.Text = egg.rarity .. " | " .. rateFormat(egg.value) .. "/s"
-    eggInfo.TextColor3 = Color3.fromRGB(80, 220, 130)
-
-    if egg.icon then
-        eggIcon.Image = egg.icon
-        eggIcon.BackgroundTransparency = 0
-    end
-end
-
-local function criarRow(egg, index)
-    local row = Instance.new("TextButton")
-    row.Size = UDim2.new(1, 0, 0, 26)
-    row.LayoutOrder = index
-    row.BackgroundColor3 = Roubo.SelectedUid == egg.uid and Color3.fromRGB(32, 48, 38) or Color3.fromRGB(15, 11, 22)
-    row.AutoButtonColor = false
-    row.Text = ""
-    row.ZIndex = 21
-    row.Parent = list
-
-    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 5)
-
-    local iconLbl = Instance.new("ImageLabel")
-    iconLbl.Size = UDim2.fromOffset(20, 20)
-    iconLbl.Position = UDim2.fromOffset(4, 3)
-    iconLbl.BackgroundTransparency = 1
-    iconLbl.Image = egg.icon or ""
-    iconLbl.ScaleType = Enum.ScaleType.Fit
-    iconLbl.ZIndex = 22
-    iconLbl.Parent = row
-
-    local nameLbl = Instance.new("TextLabel")
-    nameLbl.Size = UDim2.new(1, -70, 0, 12)
-    nameLbl.Position = UDim2.fromOffset(28, 2)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.Text = egg.name
-    nameLbl.TextColor3 = Color3.fromRGB(235, 235, 240)
-    nameLbl.TextSize = 10
-    nameLbl.Font = Enum.Font.GothamBold
-    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-    nameLbl.ZIndex = 22
-    nameLbl.Parent = row
-
-    local infoLbl = Instance.new("TextLabel")
-    infoLbl.Size = UDim2.new(1, -70, 0, 10)
-    infoLbl.Position = UDim2.fromOffset(28, 14)
-    infoLbl.BackgroundTransparency = 1
-    infoLbl.Text = egg.rarity
-    infoLbl.TextColor3 = egg.color
-    infoLbl.TextSize = 8
-    infoLbl.Font = Enum.Font.GothamMedium
-    infoLbl.TextXAlignment = Enum.TextXAlignment.Left
-    infoLbl.ZIndex = 22
-    infoLbl.Parent = row
-
-    local valueLbl = Instance.new("TextLabel")
-    valueLbl.Size = UDim2.fromOffset(50, 20)
-    valueLbl.Position = UDim2.new(1, -54, 0, 3)
-    valueLbl.BackgroundTransparency = 1
-    valueLbl.Text = rateFormat(egg.value) .. "/s"
-    valueLbl.TextColor3 = Color3.fromRGB(80, 220, 130)
-    valueLbl.TextSize = 9
-    valueLbl.Font = Enum.Font.GothamBold
-    valueLbl.TextXAlignment = Enum.TextXAlignment.Right
-    valueLbl.ZIndex = 22
-    valueLbl.Parent = row
-
-    row.MouseButton1Click:Connect(function()
-        playClick()
-
-        Roubo.SelectedUid = egg.uid
-        Roubo.SelectedCat = egg.cat
-        Roubo.LockedUid = egg.uid
-        Roubo.LockedCat = egg.cat
-        Roubo.AutoSelected = false
-        Roubo.TargetVersion = Roubo.TargetVersion + 1
-
-        eggName.Text = egg.name
-        eggInfo.Text = egg.rarity .. " | " .. rateFormat(egg.value) .. "/s"
-        eggInfo.TextColor3 = Color3.fromRGB(120, 115, 130)
-
-        if egg.icon then
-            eggIcon.Image = egg.icon
-            eggIcon.BackgroundTransparency = 0
-        end
-
-        list.Visible = false
-        panel.Size = UDim2.fromOffset(262, 185)
-        modeBox.Position = UDim2.fromOffset(10, 118)
-        expand.Text = "▼"
-        limparLista()
-    end)
-
-    currentCards[#currentCards + 1] = row
-end
-
-local function atualizarLista()
-    if not list.Visible then return end
-
-    local ovos = listCampoEggs()
-    limparLista()
-
-    for i, egg in ipairs(ovos) do
-        if i > 40 then break end
-        criarRow(egg, i)
-    end
-end
-
--- ============================================================
--- AUTO SELEÇÃO
--- ============================================================
-
-task.spawn(function()
-    while true do
-        task.wait(1.5)
-
-        if Roubo.Enabled or Roubo.Running then
-            continue
-        end
-
-        local ovos = listCampoEggs()
-        local selecionadoExiste = false
-
-        if Roubo.SelectedUid then
-            for _, egg in ipairs(ovos) do
-                if egg.uid == Roubo.SelectedUid then
-                    selecionadoExiste = true
-                    break
-                end
-            end
-        end
-
-        if Roubo.SelectedUid and not selecionadoExiste then
-            Roubo.SelectedUid = nil
-            Roubo.SelectedCat = nil
-            Roubo.LockedUid = nil
-            Roubo.LockedCat = nil
-            eggName.Text = "Nenhum ovo selecionado"
-            eggInfo.Text = "Selecione um ovo"
-            eggIcon.Image = ""
-        end
-
-        if #ovos > 0 and not Roubo.SelectedUid and not Roubo.LockedUid then
-            selecionarOvoAuto(ovos[1])
-        end
-    end
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(0.8)
-        pcall(atualizarLista)
-    end
-end)
-
--- ============================================================
--- SET STEAL
--- ============================================================
-
-local function setSteal(ativo)
-    Roubo.Enabled = ativo
-    animarToggle(ativo)
-
-    if not ativo then
-        Roubo.Running = false
-        return
-    end
-
-    if not Roubo.SelectedUid then
-        local lista = listCampoEggs()
-        if #lista > 0 then
-            Roubo.SelectedUid = lista[1].uid
-            Roubo.SelectedCat = lista[1].cat
-            Roubo.LockedUid = lista[1].uid
-            Roubo.LockedCat = lista[1].cat
-        else
-            Roubo.Enabled = false
-            animarToggle(false)
-            return
-        end
-    end
+do
+    local shadowLoadBg = Instance.new("Frame")
+    shadowLoadBg.Name = "BarraCarregamento"
+    shadowLoadBg.Position = UDim2.new(0, 25, 0, 174)
+    shadowLoadBg.Size = UDim2.new(1, -50, 0, 8)
+    shadowLoadBg.BackgroundColor3 = Color3.fromRGB(28, 35, 30)
+    shadowLoadBg.BorderSizePixel = 0
+    shadowLoadBg.ZIndex = 10
+    shadowLoadBg.Parent = r14
+    Instance.new("UICorner", shadowLoadBg).CornerRadius = UDim.new(1, 0)
+
+    local shadowLoadFill = Instance.new("Frame")
+    shadowLoadFill.Name = "Progresso"
+    shadowLoadFill.Size = UDim2.new(0, 0, 1, 0)
+    shadowLoadFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100)
+    shadowLoadFill.BorderSizePixel = 0
+    shadowLoadFill.ZIndex = 11
+    shadowLoadFill.Parent = shadowLoadBg
+    Instance.new("UICorner", shadowLoadFill).CornerRadius = UDim.new(1, 0)
+
+    local shadowLoadPercent = Instance.new("TextLabel")
+    shadowLoadPercent.Name = "Porcentagem"
+    shadowLoadPercent.Position = UDim2.new(0, 25, 0, 187)
+    shadowLoadPercent.Size = UDim2.new(1, -50, 0, 22)
+    shadowLoadPercent.BackgroundTransparency = 1
+    shadowLoadPercent.Text = "1%"
+    shadowLoadPercent.TextColor3 = Color3.fromRGB(0, 220, 100)
+    shadowLoadPercent.Font = Enum.Font.GothamBold
+    shadowLoadPercent.TextSize = 14
+    shadowLoadPercent.TextXAlignment = Enum.TextXAlignment.Center
+    shadowLoadPercent.ZIndex = 11
+    shadowLoadPercent.Parent = r14
 
     task.spawn(function()
-        while Roubo.Enabled do
-            local version = Roubo.TargetVersion
-            rodarCicloMultiArea()
-
-            if not Roubo.Enabled then break end
-
-            if Roubo.TargetVersion ~= version then
-                task.wait(0.03)
-            else
-                Roubo.Enabled = false
-                Roubo.Running = false
-                animarToggle(false)
-                break
-            end
+        for n = 0, SHADOW_HUB_LOADING_TARGET do
+            if not shadowLoadBg.Parent then return end
+            shadowLoadFill.Size = UDim2.new(n / 100, 0, 1, 0)
+            shadowLoadPercent.Text = tostring(n) .. "%"
+            task.wait(0.02)
         end
+        -- Permanece no alvo escolhido até o loader ser trocado pela GUI principal.
     end)
 end
-
-toggle.MouseButton1Click:Connect(function()
-    playClick()
-    setSteal(not Roubo.Enabled)
-end)
-
--- ============================================================
--- EXPANDIR
--- ============================================================
-
-expand.MouseButton1Click:Connect(function()
-    playClick()
-
-    list.Visible = not list.Visible
-
-    if list.Visible then
-        panel.Size = UDim2.fromOffset(262, 290)
-        modeBox.Position = UDim2.fromOffset(10, 225)
-        expand.Text = "▲"
-        atualizarLista()
-    else
-        panel.Size = UDim2.fromOffset(262, 185)
-        modeBox.Position = UDim2.fromOffset(10, 118)
-        expand.Text = "▼"
-    end
-end)
-
--- ============================================================
--- ABRIR / FECHAR
--- ============================================================
-
-local panelOpen = true
-local openPosition = panel.Position
-local openScale = panelScale.Scale
-
-local panelTween = TweenInfo.new(
-    0.22,
-    Enum.EasingStyle.Quart,
-    Enum.EasingDirection.Out
-)
-
-local function setPanelOpen(open)
-    if panelOpen == open then return end
-    panelOpen = open
-    playClick()
-
-    if open then
-        panel.Visible = true
-        panel.BackgroundTransparency = 1
-        panelScale.Scale = openScale * 0.88
-
-        TweenService:Create(
-            panel,
-            panelTween,
-            { BackgroundTransparency = 0.08 }
-        ):Play()
-
-        TweenService:Create(
-            panelScale,
-            panelTween,
-            { Scale = openScale }
-        ):Play()
-    else
-        local closeTween = TweenService:Create(
-            panel,
-            panelTween,
-            { BackgroundTransparency = 1 }
-        )
-
-        TweenService:Create(
-            panelScale,
-            panelTween,
-            { Scale = openScale * 0.88 }
-        ):Play()
-
-        closeTween:Play()
-
-        closeTween.Completed:Connect(function()
-            if not panelOpen then
-                panel.Visible = false
-            end
-        end)
-    end
+local_function_27 = r1
+r10 = Instance.new
+local_function_27 = r1
+local r12 = r10("UICorner", r14)
+r12.CornerRadius = ((UDim).new(0, 16))
+local_function_27 = r1
+r10 = Instance.new
+local_function_27 = r1
+r12 = r10("UIStroke")
+r12.Color = ((Color3).fromRGB(0, 220, 100))
+r12.Thickness = 2
+r12.Transparency = .15
+r12.Parent = r14
+local_function_28 = r1
+r10 = (Instance).new
+local_function_28 = r1
+local r11 = r10("ImageLabel")
+local_function_27 = r1
+r11.AnchorPoint = ((Vector2.new)(0.5, 0))
+local_function_27 = r1
+r11.Position = ((UDim2.new)(0.5, 0, 0, 18))
+local_function_27 = r1
+r11.Size = ((UDim2.fromOffset)(78, 78))
+local_function_27 = r1
+r11.BackgroundTransparency = 1
+local_function_27 = r1
+local_function_28 = r1
+r11.Image = "rbxassetid://92667850616234"
+local_function_27 = r1
+r11.ScaleType = (((Enum).ScaleType).Fit)
+local_function_27 = r1
+r11.Parent = r14
+local r15 = ((Instance).new)("TextLabel")
+local_function_28 = r1
+r15.Position = (((UDim2).new)(0, 15, 0, 105))
+local_function_28 = r1
+r15.Size = (((UDim2).new)(1, -30, 0, 25))
+local_function_28 = r1
+r15.BackgroundTransparency = 1
+local_function_28 = r1
+r15.Text = "SHADOW HUB V2 ATUALIZANDO!"
+local_function_28 = r1
+r15.TextColor3 = (((Color3).fromRGB)(240, 255, 245))
+local_function_28 = r1
+r15.TextStrokeColor3 = (((Color3).fromRGB)(0, 0, 0))
+local_function_28 = r1
+r15.TextStrokeTransparency = 0.25
+local_function_28 = r1
+r15.Font = ((Enum.Font).GothamBold)
+local_function_28 = r1
+r15.TextSize = 18
+local_function_28 = r1
+r15.Parent = r14
+local r17 = (Instance.new)("TextLabel")
+r17.Position = (((UDim2).new)(0, 15, 0, 132))
+r17.Size = (((UDim2).new)(1, -30, 0, 20))
+r17.BackgroundTransparency = 1
+r17.Text = "SHADOW HUB FOI ATUALIZADO"
+r17.TextColor3 = (((Color3).fromRGB)(115, 190, 135))
+r17.Font = (("Font").GothamMedium)
+r17.TextSize = 11
+r17.Parent = r14
+local r10 = (((Instance).new)("TextButton"))
+local r18 = r10
+r18.Position = (UDim2.new(0, 18, 1, -57))
+r18 = r10
+r18.Size = (UDim2.new(1, -36, 0, 40))
+r18 = r10
+r18.BackgroundColor3 = (Color3.fromRGB(88, 101, 242))
+r18 = r10
+r18.BorderSizePixel = 0
+r18 = r10
+r18.Text = "GET SCRIPT"
+r18 = r10
+r18.TextColor3 = (Color3.fromRGB(255, 255, 255))
+r18 = r10
+r18.Font = (Enum.Font.GothamBold)
+r18 = r10
+r18.TextSize = 14
+r18 = r10
+r18.AutoButtonColor = false
+r18 = r10
+r18.Parent = r14
+local r21 = Instance.new("UICorner", r10)
+r21.CornerRadius = (UDim.new(0, 10))
+r21 = Instance.new("ImageLabel")
+r21.AnchorPoint = (Vector2.new(0, 0.5))
+r21.Position = (UDim2.new(0, 13, 0.5, 0))
+r21.Size = (UDim2.fromOffset(22, 22))
+r21.BackgroundTransparency = 1
+r21.Image = "rbxassetid://121807029290075"
+r21.ScaleType = (Enum.ScaleType.Fit)
+r21.Parent = r10
+r18 = r10.MouseEnter
+local function local_function_4(...)
+	local_82 = r6:Create(r10, (TweenInfo.new(.12)), ({
+		["BackgroundColor3"] = (Color3.fromRGB(105, 117, 255))
+	}))
+	local_82:Play()
 end
-
-icon.MouseButton1Click:Connect(function()
-    setPanelOpen(not panelOpen)
-end)
-
--- ============================================================
--- DRAG DO PAINEL
--- ============================================================
-
-local dragBar = Instance.new("TextButton")
-dragBar.Size = UDim2.fromOffset(178, 42)
-dragBar.Position = UDim2.fromOffset(30, 0)
-dragBar.BackgroundTransparency = 1
-dragBar.Text = ""
-dragBar.ZIndex = 50
-dragBar.Parent = panel
-
-local dragging = false
-local dragStart
-local startPos
-
-dragBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = panel.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                openPosition = panel.Position
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
-
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement
-        and input.UserInputType ~= Enum.UserInputType.Touch then
-        return
-    end
-
-    local delta = input.Position - dragStart
-
-    panel.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-
-    openPosition = panel.Position
-end)
-
--- ============================================================
--- BOTÃO SAIR DA ESTEIRA
--- ============================================================
-
-local botaoEsteira = Instance.new("TextButton")
-botaoEsteira.Size = UDim2.fromOffset(220, 48)
-botaoEsteira.Position = UDim2.new(0.5, -110, 0.9, 0)
-botaoEsteira.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-botaoEsteira.BackgroundTransparency = 0.05
-botaoEsteira.BorderSizePixel = 0
-botaoEsteira.Text = ""
-botaoEsteira.AutoButtonColor = false
-botaoEsteira.Visible = false
-botaoEsteira.Parent = gui
-
-Instance.new("UICorner", botaoEsteira).CornerRadius = UDim.new(0, 10)
-
-local strokeEsteira = Instance.new("UIStroke", botaoEsteira)
-strokeEsteira.Color = Color3.fromRGB(60, 60, 60)
-strokeEsteira.Thickness = 1
-strokeEsteira.Transparency = 0.3
-
-local logoHolder = Instance.new("Frame")
-logoHolder.Size = UDim2.fromOffset(32, 32)
-logoHolder.Position = UDim2.new(0, 8, 0.5, -16)
-logoHolder.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-logoHolder.BorderSizePixel = 0
-logoHolder.Parent = botaoEsteira
-
-Instance.new("UICorner", logoHolder).CornerRadius = UDim.new(1, 0)
-
-local logoImg2 = Instance.new("ImageLabel")
-logoImg2.Size = UDim2.fromScale(0.85, 0.85)
-logoImg2.Position = UDim2.fromScale(0.075, 0.075)
-logoImg2.BackgroundTransparency = 1
-logoImg2.ScaleType = Enum.ScaleType.Fit
-logoImg2.Image = "rbxassetid://92667850616234"
-logoImg2.Parent = logoHolder
-
-Instance.new("UICorner", logoImg2).CornerRadius = UDim.new(1, 0)
-
-local textoEsteira = Instance.new("TextLabel")
-textoEsteira.Size = UDim2.new(1, -55, 1, 0)
-textoEsteira.Position = UDim2.fromOffset(48, 0)
-textoEsteira.BackgroundTransparency = 1
-textoEsteira.Text = "Sair da esteira"
-textoEsteira.TextColor3 = Color3.fromRGB(230, 230, 230)
-textoEsteira.Font = Enum.Font.GothamBold
-textoEsteira.TextSize = 13
-textoEsteira.TextXAlignment = Enum.TextXAlignment.Left
-textoEsteira.Parent = botaoEsteira
-
-local function sairEsteira()
-    local packages = ReplicatedStorage:FindFirstChild("Packages")
-    local networking = packages and packages:FindFirstChild("Networking")
-    local askDoff = networking and networking:FindFirstChild(
-        "RF/Treadmill/AskDoff"
-    )
-
-    if askDoff then
-        pcall(function()
-            askDoff:InvokeServer()
-        end)
-    end
-
-    local hum = getHum()
-    if hum then
-        pcall(function()
-            hum.Jump = true
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end)
-    end
+r18:Connect(local_function_4)
+r18 = r10.MouseLeave
+local function local_function_5(...)
+	local_96 = r6:Create(r10, (TweenInfo.new(.12)), ({
+		["BackgroundColor3"] = (Color3.fromRGB(88, 101, 242))
+	}))
+	local_96:Play()
 end
+r18:Connect(local_function_5)
+r18 = r10.MouseButton1Click
+local function local_function_6(...)
+	local local_100
+	pcall((function(...)
+		if setclipboard then
+			setclipboard(r5)
+		else
+			if toclipboard then
+				toclipboard(r5)
+			end
+		end
+	end))
+	local local_100 = (r10.Text)
+	local local_101 = r10
+	local_101.Text = "DISCORD COPIED!"
+	task.delay(1.5, (function(...)
+		local local_112, local_120
+		local_112 = r10
+		if local_112 then
+			local_112 = r10.Parent
+		end
+		if local_112 then
+			local_120 = r10
+			local_120.Text = local_100
+		end
+	end))
+end
+r18:Connect(local_function_6)
 
-botaoEsteira.MouseButton1Click:Connect(sairEsteira)
-botaoEsteira.TouchTap:Connect(sairEsteira)
+local r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, r32, r33, r34, r35
+local r1
+local r2
+local r7
+local r6
+local r4
+local r13
+local r14
+local r18
+r15 = nil
+r15 = {}
+r12 = nil
+r17 = nil
+r10 = nil
+r1 = nil
+r4 = "math"
+r11 = nil
+r6 = nil
+r18 = 256
+local r7 = nil
+r12 = {}
+r10 = "math"
+r5 = nil
+r7 = nil
+local r1 = nil
+r1 = r6
+r10 = "floor"
+r21 = r18
+r6 = math.floor
+r5 = "table"
+local r2 = nil
+r2 = r6
+r4 = "random"
+r6 = math.random
+r5 = "remove"
+local r11 = nil
+r18 = 1
+r10 = table.remove
+local r14 = nil
+r13 = "string"
+r13 = "char"
+r4 = string.char
+local r13 = nil
+r22 = 1
+r5 = 0
+r13 = 0
+r5 = 2
+r14 = 2
+r18 = 0
+r5 = {}
+r17 = 1
+r11 = r12
+r12 = 0
+r23 = r22<r18
+r18 = r17-r22
+while true do
+	r24 = not r23
+	r18 = r18+r22
+	r17 = (r23 and (r18>=r21)) or (r24 and (r18<=r21))
+	r24 = 15487357
+	r3 = r17 and 15487357
+	r17 = 7129092
+	if ((r23 and ((r18 >= r21)))) or ((((not r23)) and ((r18 <= r21)))) then
+		r17 = r18
+		r24 = r18
+		r15[r17] = r18
+		r17 = nil
+	else
+		break
+	end
+end
+r21 = 0
+r18 = #r15
+r17 = r18==0
+while true do
+	r18 = 1
+	r17 = r6(1,(#r15))
+	r24 = 1
+	r18 = r10(r15,r17)
+	r21 = r11
+	r23 = r18-1
+	r22 = r4((r18-1))
+	r21[r18] = r22
+	r17 = nil
+	r18 = nil
+	r21 = 0
+	r18 = #r15
+	r17 = r18==0
+	if ((# r15)) == 0 then
+		break
+	end
+end
+r17 = {}
+local r18 = nil
+local r22 = nil
+r15 = nil
+r18 = r17
+r5 = nil
+r23 = "setmetatable"
+local function local_function_1(...)
+	local local_27, local_28, local_29, local_30, local_31, local_32, local_33, local_34, local_35, local_36, local_37, local_38, local_39, local_40, local_41, local_42
+	local_27 = r18
+	local_28 = #r18
+	local_27 = 0
+	local_29 = local_28==0
+	if ((# r18)) == 0 then
+		local_30 = r13
+		local_31 = 125
+		local_27 = r13*125
+		local_30 = 17425375256497
+		local_28 = (r13*125)+17425375256497
+		local_27 = 35184372088832
+		local_29 = ((r13*125)+17425375256497)%35184372088832
+		local_30 = 1
+		r13 = local_29
+		local_27 = r14
+		local_28 = r14~=1
+		while true do
+			local_31 = 149
+			local_30 = r14
+			local_27 = r14*149
+			local_30 = 257
+			r14 = ((r14*149)%257)
+			local_31 = 1
+			local_30 = r14
+			local_27 = r14~=1
+			if r14 ~= 1 then
+				break
+			end
+		end
+		local_30 = r14
+		local_31 = 32
+		local_32 = 13
+		local_27 = r14%32
+		local_33 = 2
+		local_34 = r2
+		local_35 = r13
+		local_36 = r14
+		local_37 = r14-(r14%32)
+		local_36 = 32
+		local_38 = (r14-(r14%32))/32
+		local_39 = 13-((r14-(r14%32))/32)
+		local_40 = 2^(13-((r14-(r14%32))/32))
+		local_41 = r13/(2^(13-((r14-(r14%32))/32)))
+		local_42 = r2((r13/(2^(13-((r14-(r14%32))/32)))))
+		local_34 = 4294967296
+		local_31 = local_42%4294967296
+		local_42 = 2
+		local_34 = 2^(r14%32)
+		local_30 = local_31/(2^(r14%32))
+		local_34 = r2
+		local_33 = 256
+		local_40 = 1
+		local_35 = (local_31/(2^(r14%32)))%1
+		local_40 = 4294967296
+		local_41 = ((local_31/(2^(r14%32)))%1)*4294967296
+		local_42 = r2((((local_31/(2^(r14%32)))%1)*4294967296))
+		local_34 = r2
+		local_35 = 65536
+		local_41 = r2((local_31/(2^(r14%32))))
+		local_31 = local_42+local_41
+		local_42 = 65536
+		local_34 = local_31%65536
+		local_27 = nil
+		local_41 = local_31-(local_31%65536)
+		local_42 = (local_31-(local_31%65536))/65536
+		local_32 = 256
+		local_35 = 256
+		local_41 = (local_31%65536)%256
+		local_31 = nil
+		local_40 = local_34-local_41
+		local_34 = nil
+		local_35 = local_40/256
+		local_30 = nil
+		local_33 = 256
+		local_40 = local_42%256
+		local_39 = local_42-(local_42%256)
+		local_33 = (local_42-(local_42%256))/256
+		local_42 = nil
+		local_39 = {local_41;local_35,local_40,local_33}
+		r18 = local_39
+		local_33 = nil
+		local_41 = nil
+		local_40 = nil
+		local_35 = nil
+	end
+	local_31 = "table"
+	local_30 = table
+	local_31 = "remove"
+	local_27 = local_30.remove
+	local_31 = r18
+	return local_27(r18)
+end
+local r17 = nil
+r24 = {}
+r29 = nil
+r12 = nil
+r2 = "game"
+r30 = "__index"
+r21 = {}
+r27 = "__metatable"
+r22 = r21
+r21 = setmetatable
+r6 = nil
+r25 = r22
+r26 = {[r30]=r22;[r27]=r29}
+r23 = setmetatable(r24,r26)
+r4 = nil
+local function local_function_2(argument_1, argument_2, ...)
+	local local_43, local_44, local_45, local_46, local_47, local_48, local_49, local_50, local_51, local_52, local_53, local_54, local_55, local_56, local_57, local_58, local_59, local_60, local_61, local_62
+	local_43 = r22
+	local_46 = r22
+	local_43 = r22[argument_2]
+	if r22[argument_2] then
+	else
+		local_47 = 1
+		local_43 = {}
+		local_48 = 255
+		local_49 = 35184372088832
+		r18 = ({})
+		local_50 = r11
+		local_51 = r11
+		local_50 = argument_2%35184372088832
+		r13 = (argument_2%35184372088832)
+		local_52 = argument_2%255
+		local_48 = 2
+		local_49 = (argument_2%255)+2
+		r14 = ((argument_2%255)+2)
+		local_53 = "string"
+		local_48 = string
+		local_53 = "len"
+		local_48 = local_48.len(argument_1)
+		local_54 = 1
+		local_47 = 0
+		local_55 = false
+		local_52 = ""
+		local_46[argument_2] = ""
+		local_52 = 204
+		local_53 = 1
+		local_47 = 1-local_54
+		local_56 = local_48
+		while true do
+			local_57 = not local_55
+			local_47 = local_47+local_54
+			local_53 = (local_55 and (local_47>=local_56)) or (local_57 and (local_47<=local_56))
+			local_57 = 5282576
+			local_43 = local_53 and 5282576
+			local_53 = 6361251
+			if ((local_55 and ((local_47 >= local_56)))) or ((((not local_55)) and ((local_47 <= local_56)))) then
+				local_53 = local_47
+				local_58 = "string"
+				local_59 = string
+				local_58 = "byte"
+				local_59 = local_59.byte(argument_1,local_47)
+				local_60 = local_function_1
+				local_58 = local_function_1()
+				local_61 = local_59+local_58
+				local_58 = 1
+				local_62 = local_61+local_52
+				local_61 = 256
+				local_57 = local_62%256
+				local_61 = local_46[argument_2]
+				local_53 = nil
+				local_52 = (local_62%256)
+				local_59 = ((local_62%256))+1
+				local_62 = local_61..local_51[(((local_62%256))+1)]
+				local_46[argument_2] = local_62
+			else
+				break
+			end
+		end
+		local_51 = nil
+		local_52 = nil
+		local_48 = nil
+	end
+	return argument_2
+end
+r7 = r23
+r12 = 26042821308255
+r14 = "$\143-\006Ty9"
+r10 = nil
+r6 = q[r2]
+r4 = r7
+r2 = "GetService"
+r13 = "Players"
+r17 = "dQь"
+r2 = r6[r2]
+r18 = 21098670745184
+r12 = "uJu\143R\207\014\175\164\169\af"
+r10 = "Players"
+r2 = r2(r6,r10)
+r10 = "game"
+r6 = game
+r11 = 11249743713398
+r5 = r7
+r13 = local_function_2
+r14 = "TweenService"
+r10 = "GetService"
+r4 = "TweenService"
+r10 = r6[r10]
+r10 = r10(r6,r4)
+local r6 = nil
+r6 = r10
+r11 = 599929225495
+r5 = r7
+r12 = "\184\t(L7{\140j \001\026"
+local_function_23 = r1
+r14 = "LocalPlayer"
+r11 = 6732061740094
+r12 = "\r}\2463y\254\206xQ\157\147\223H\141\142%\022\245\160K\026\130V\232\152\022\024\184x"
+r10 = r2.LocalPlayer
+r2 = nil
+local r4 = nil
+r4 = r10
+r5 = r7
+local_function_23 = r1
+r14 = ""
+r10 = ""
+local captured_1 = r4
+local function local_function_3(...)
+	local local_63, local_64, local_65, local_66, local_67, local_68, local_69, local_70
+	task.wait(2)
+	local_63 = captured_1
+	local_64 = 29744249320986
+	local_65 = r7
+	local_66 = local_function_2
+	local_67 = "1\1384\152\2469\021\211\196"
+	local_68 = "PlayerGui"
+	local_67 = "X2рIWжѓз”Шл”цЎњ5"
+	local_69 = "PlayerGui"
+	local_64 = 20299303167212
+	local_70 = captured_1[local_69]
+	local_65 = r7
+	local_66 = local_function_2
+	local_68 = "ShadowHubAtualizando"
+	local_63 = local_70:FindFirstChild("ShadowHubAtualizando")
+	local_69 = local_63
+	if local_69 then
+		local_69:Destroy()
+	end
+	local_69 = nil
+end
+local r5 = nil
+r13 = "pcall"
+r24 = 14374075619877
+r5 = r10
+pcall(local_function_3)
+r14 = "Instance"
+r13 = Instance
+r12 = r7
+local_function_21 = r1
+r15 = "new"
+r18 = 12126448440846
+r14 = "new"
+r10 = r13[r14]
+r17 = "@њгµРMЬ)ѕ"
+r12 = r7
+local_function_21 = r1
+r25 = 2966068528485
+r15 = "ScreenGui"
+r14 = "ScreenGui"
+r13 = r10(r14)
+r14 = r7
+r15 = "ђ\\AЈ"
+r18 = 855189913998
+r17 = 13615876954308
+r11 = "Name"
+r10 = "Name"
+r22 = 13119003744221
+r12 = r7
+r21 = "\02865L\174U0\\\143"
+r17 = "\210w\247\138\2214 \244\166\142\026'.\209'\""
+local_function_21 = r1
+r15 = "ShadowHubAtualizando"
+r17 = 14116188117421
+r14 = "ShadowHubAtualizado"
+r13[r10] = r14
+r14 = r7
+r15 = "\180\030yiP#\1386\193kAZ"
+r11 = "ResetOnSpawn"
+r15 = "\237_4\233\132\029A\223\006E\029\133\193'"
+r10 = "ResetOnSpawn"
+r14 = false
+r13[r10] = false
+r14 = r7
+r17 = 13990498638194
+r11 = "IgnoreGuiInset"
+r10 = "IgnoreGuiInset"
+r14 = true
+r13[r10] = true
+r17 = 31927248157203
+r14 = r7
+r15 = "»/Сzѓэ'-¤Yh]"
+r11 = "DisplayOrder"
+r10 = "DisplayOrder"
+r17 = 16432100154851
+r14 = 999
+r15 = "M0\026\253}\018"
+r13[r10] = 999
+r14 = r7
+r11 = "Parent"
+r10 = "Parent"
+r14 = r4
+r15 = r7
+local_function_27 = r1
+r18 = "PlayerGui"
+r11 = "PlayerGui"
+r18 = "кй"
+r12 = "WaitForChild"
+r30 = 19136746529487
+r12 = r4[r12]
+r21 = 10853558899646
+r12 = r12(r4,r11)
+r13[r10] = r12
+r12 = "Instance"
+r14 = Instance
+r11 = r7
+r17 = "new"
+r10 = r14.new
+r21 = 31616274921858
+r11 = r7
+r18 = "Є]xм-"
+r17 = "Frame"
+r14 = r10("Frame")
+r18 = 26741648568484
+r12 = r7
+r17 = "%ЙфЎы±јT™Јв"
+local_function_21 = r1
+r15 = "AnchorPoint"
+r22 = "\135\134\020"
+r10 = "AnchorPoint"
+r15 = "Vector2"
+r11 = Vector2
+r17 = r7
+local_function_28 = r1
+r21 = "new"
+r15 = "new"
+r17 = 0.5
+r12 = r11[r15]
+r15 = 0.5
+r11 = r12(0.5,0.5)
+r22 = ",aГ®FШ‹х\n"
+r17 = "\168x\031!A\251\134R"
+r14[r10] = r11
+r12 = r7
+r18 = 6149691132719
+local_function_21 = r1
+r24 = 19798484968451
+r15 = "Position"
+r10 = "Position"
+r15 = "UDim2"
+r11 = UDim2
+r17 = r7
+local_function_28 = r1
+r21 = "fromScale"
+r15 = "fromScale"
+r17 = 0.5
+r24 = 31378812958995
+r22 = "\136\141\144\202\005\169\156k\143\164"
+r12 = r11[r15]
+r15 = 0.5
+r11 = r12(0.5,0.5)
+r14[r10] = r11
+r17 = "¬7'­"
+r12 = r7
+r18 = 6800557558878
+local_function_21 = r1
+r15 = "Size"
+r10 = "Size"
+r15 = "UDim2"
+r26 = 7618794769883
+r11 = UDim2
+r17 = r7
+local_function_28 = r1
+r21 = "fromOffset"
+r15 = "fromOffset"
+r17 = 225
+r12 = r11[r15]
+r15 = 310
+r11 = r12(310,225)
+r14[r10] = r11
+r12 = r7
+local_function_21 = r1
+r18 = 17947577147557
+r17 = "\139\156\250\252\019\151\213\2213\016\174\189\022\ftV"
+r15 = "BackgroundColor3"
+r10 = "BackgroundColor3"
+r15 = "Color3"
+r11 = Color3
+r22 = "JыPзхя<"
+r24 = 32668724558700
+r17 = r7
+local_function_28 = r1
+r21 = "fromRGB"
+r22 = 14679777614515
+r18 = 8
+r12 = r11.fromRGB
+r17 = 10
+r15 = 7
+r11 = r12(7,10,8)
+r14[r10] = r11
+r12 = r7
+local_function_21 = r1
+r17 = "\233?\215cE\134\211^\169\211\025\216Og\213"
+r27 = 19942132917318
+r18 = 6021691263732
+r15 = "BorderSizePixel"
+r10 = "BorderSizePixel"
+r12 = 0
+r14[r10] = 0
+r12 = r7
+r17 = "а,T$КЁ"
+local_function_21 = r1
+r18 = 4843485874383
+r15 = "Parent"
+r10 = "Parent"
+r21 = "йс"
+r12 = r13
+r11 = "Instance"
+r14[r10] = r13
+r12 = q[r11]
+r15 = r7
+local_function_27 = r1
+r18 = "new"
+r21 = "і±3LЕ8Сё"
+r11 = "new"
+r22 = 1905447584631
+r10 = r12[r11]
+r15 = r7
+local_function_27 = r1
+r18 = "UICorner"
+r11 = "UICorner"
+r21 = 22268861130881
+r24 = "‹ТJ"
+r12 = r10(r11,r14)
+r11 = r7
+r18 = "\173\238O,x\137\002\179E\150\162\220"
+r17 = "CornerRadius"
+r10 = "CornerRadius"
+r17 = "UDim"
+r15 = UDim
+r18 = r7
+r22 = "new"
+r17 = "new"
+r18 = 16
+r11 = r15[r17]
+r17 = 0
+r15 = r11(0,16)
+r22 = 27948268909270
+r11 = "Instance"
+r12[r10] = r15
+r12 = q[r11]
+r21 = "\f=;"
+r15 = r7
+local_function_27 = r1
+r24 = "\201\153\000!\223\181\004"
+r18 = "new"
+r11 = "new"
+r10 = r12[r11]
+r22 = 33518604844280
+r15 = r7
+r21 = "•Д&)¤Т,0"
+local_function_27 = r1
+r18 = "UIStroke"
+r11 = "UIStroke"
+r12 = r10(r11)
+r21 = 8218723995379
+r18 = "BЄ(—$"
+r11 = r7
+r17 = "Color"
+r10 = "Color"
+r17 = "Color3"
+r15 = Color3
+r18 = r7
+r26 = 34680330649365
+r22 = "fromRGB"
+r17 = "fromRGB"
+r22 = "\\®Е"
+r18 = 220
+r11 = r15[r17]
+r17 = 0
+r21 = 100
+r15 = r11(0,220,100)
+r18 = "\248\019\235\224\211c\131\211\219"
+r21 = 28078482076435
+r12[r10] = r15
+r11 = r7
+r24 = 5020558412065
+r17 = "Thickness"
+r18 = "щLЁОџЭ#љLl>C"
+r10 = "Thickness"
+r11 = 2
+r12[r10] = 2
+r11 = r7
+r21 = 28518027162591
+r17 = "Transparency"
+r10 = "Transparency"
+r21 = 20594629305718
+r18 = "\197\006\214O\252\157"
+r11 = .15
+r12[r10] = .15
+r11 = r7
+r17 = "Parent"
+r10 = "Parent"
+r11 = r14
+r15 = "Instance"
+r12[r10] = r14
+r11 = q[r15]
+r17 = r7
+local_function_28 = r1
+r21 = "new"
+r24 = 6949532011684
+r22 = "\019\131z<\139\242\133\207-\223"
+r10 = r11.new
+r17 = r7
+local_function_28 = r1
+r21 = "ImageLabel"
+r15 = "ImageLabel"
+r22 = 21449819219716
+r26 = "Л€Ъ"
+r11 = r10(r15)
+r15 = r7
+local_function_27 = r1
+r18 = "AnchorPoint"
+r10 = "AnchorPoint"
+r18 = "Vector2"
+r17 = Vector2
+r21 = r7
+r22 = local_function_2
+r24 = "new"
+r22 = 20940030666262
+r18 = "new"
+r30 = 18192695271703
+r21 = 0
+r15 = r17[r18]
+r26 = ")ЩF"
+r18 = 0.5
+r17 = r15(0.5,0)
+r11[r10] = r17
+r15 = r7
+r21 = "\016\220\137>\164\172%4"
+local_function_27 = r1
+r18 = "Position"
+r10 = "Position"
+r18 = "UDim2"
+r17 = UDim2
+r21 = r7
+r22 = local_function_2
+r24 = "new"
+r18 = "new"
+r21 = 0
+r30 = 34059034410483
+r22 = 0
+r24 = 18
+r15 = r17[r18]
+r18 = 0.5
+r17 = r15(0.5,0,0,18)
+r11[r10] = r17
+r21 = "?џф;"
+r22 = 384474579123
+r15 = r7
+r26 = "\029f\229\018\171*\246\"]\133"
+local_function_27 = r1
+r18 = "Size"
+r10 = "Size"
+r18 = "UDim2"
+r17 = UDim2
+r21 = r7
+r22 = local_function_2
+r24 = "fromOffset"
+r18 = "fromOffset"
+r15 = r17[r18]
+r22 = 29046254171349
+r18 = 78
+r21 = 78
+r17 = r15(78,78)
+r24 = 25616310890136
+r11[r10] = r17
+r15 = r7
+local_function_27 = r1
+r21 = "\016oLPu0\142\255\207\127\176\137X\006\176.\211\239\149-\178\169"
+r18 = "BackgroundTransparency"
+r21 = "r;hg}"
+r10 = "BackgroundTransparency"
+r15 = 1
+r22 = 32000749500981
+r11[r10] = 1
+r15 = r7
+local_function_27 = r1
+r18 = "Image"
+r10 = "Image"
+r22 = "\027\025Qn&\"}\243B\188)\214\196\143\n\v\253\206\001Nj\150\193\221q\014\\\242"
+r17 = r7
+local_function_28 = r1
+r21 = "rbxassetid://103090301992311"
+r22 = 8235957702395
+r15 = "rbxassetid://103090301992311"
+r21 = "аЏ¦l_ьћX"
+r11[r10] = r15
+r15 = r7
+local_function_27 = r1
+r18 = "ScaleType"
+r21 = "Enum"
+r10 = "ScaleType"
+r18 = Enum
+r22 = r7
+r30 = "fmAK№)Ў¤P"
+r26 = "ScaleType"
+r21 = "ScaleType"
+r26 = "$‰+"
+r17 = r18[r21]
+r30 = 10230423753371
+r21 = r7
+r22 = local_function_2
+r24 = "Fit"
+r22 = 15036515261273
+r18 = "Fit"
+r26 = 34344881503865
+r21 = ".\136C`\173\029"
+r15 = r17[r18]
+r11[r10] = r15
+r25 = 5182200662381
+r15 = r7
+local_function_27 = r1
+r18 = "Parent"
+r10 = "Parent"
+r17 = "Instance"
+r15 = r14
+r11[r10] = r14
+r15 = q[r17]
+r18 = r7
+r24 = ".•Ћ"
+r22 = "new"
+r17 = "new"
+r26 = 28178000917313
+r10 = r15[r17]
+r18 = r7
+r24 = "ѕфЌ°m†DЧЗ"
+r30 = "\003\aB"
+r22 = "TextLabel"
+r15 = r10("TextLabel")
+r24 = 12520867714758
+r13 = nil
+r17 = r7
+r22 = "ЧА]ЗР„ОU"
+local_function_28 = r1
+r21 = "Position"
+r10 = "Position"
+r21 = "UDim2"
+r18 = UDim2
+r22 = r7
+r26 = "new"
+r30 = "еуЮ"
+r21 = "new"
+r24 = 0
+r22 = 15
+r25 = 27200645345658
+r17 = r18[r21]
+r26 = 105
+r21 = 0
+r18 = r17(0,15,0,105)
+r15[r10] = r18
+r24 = 33021486791696
+r22 = "“,ят"
+r17 = r7
+local_function_28 = r1
+r21 = "Size"
+r10 = "Size"
+r21 = "UDim2"
+r18 = UDim2
+r22 = r7
+r26 = "new"
+r17 = r18.new
+r26 = 25
+r22 = -30
+r24 = 0
+r21 = 1
+r18 = r17(1,-30,0,25)
+r22 = "\003s\f\t\230C\242\140\2499.i\248\161V\176=C\252\217\024\251"
+r24 = 7087648263396
+r15[r10] = r18
+r17 = r7
+local_function_28 = r1
+r21 = "BackgroundTransparency"
+r10 = "BackgroundTransparency"
+r22 = "\004k\021D"
+r17 = 1
+r24 = 20105975817362
+r15[r10] = 1
+r17 = r7
+local_function_28 = r1
+r21 = "Text"
+r24 = "ds\219\225\030t\170\152\138g\192\166)q\211\003\202\242*Q\138}"
+r30 = "\026\137C>\128\245\233"
+r10 = "Text"
+r26 = 34819440115542
+r18 = r7
+r22 = "SHADOW HUB V2 ATUALIZANDO!!"
+r24 = 35035917172666
+r17 = "SHADOW HUB V2 ATUALIZANDO!"
+r22 = "\196\1624\005#\021b\197.."
+r15[r10] = r17
+r17 = r7
+local_function_28 = r1
+r21 = "TextColor3"
+r10 = "TextColor3"
+r21 = "Color3"
+r18 = Color3
+r22 = r7
+r25 = 18440208556426
+r26 = "fromRGB"
+r17 = r18.fromRGB
+r22 = 255
+r21 = 240
+r24 = 245
+r18 = r17(240,255,245)
+r15[r10] = r18
+r17 = r7
+r24 = 7853792005705
+local_function_28 = r1
+r22 = "\175Y|[\161$eS\195k\163\171\b\000:\177"
+r21 = "TextStrokeColor3"
+r10 = "TextStrokeColor3"
+r30 = "\239\b\127\185\214\200\206"
+r21 = "Color3"
+r25 = 34531875716816
+r18 = Color3
+r22 = r7
+r26 = "fromRGB"
+r17 = r18.fromRGB
+r24 = 0
+r22 = 0
+r21 = 0
+r25 = "\204\029\016\002"
+r18 = r17(0,0,0)
+r24 = 11334318527645
+r15[r10] = r18
+r17 = r7
+local_function_28 = r1
+r22 = "\n\0163*\019\246K/\203r*%\172\165\"a\173+\210o\r8"
+r21 = "TextStrokeTransparency"
+r10 = "TextStrokeTransparency"
+r17 = 0.25
+r24 = 1187447063080
+r22 = "\015\244$\249"
+r15[r10] = 0.25
+r17 = r7
+local_function_28 = r1
+r21 = "Font"
+r10 = "Font"
+r22 = "Enum"
+r21 = Enum
+r24 = r7
+r30 = "Font"
+r33 = 4366381828081
+r22 = "Font"
+r30 = "\171g\220\127\202=\001\031V\250"
+r18 = r21[r22]
+r25 = 16354876939711
+r22 = r7
+r26 = "GothamBold"
+r21 = "GothamBold"
+r26 = "ьЛќ"
+r22 = "\157\003\158\199\226\t\146\a"
+r24 = 8136979091149
+r29 = 34819053387605
+r17 = r18[r21]
+r15[r10] = r17
+r17 = r7
+r30 = 307251363983
+local_function_28 = r1
+r21 = "TextSize"
+r24 = 6207580031818
+r22 = "lЗОЪ“M"
+r10 = "TextSize"
+r17 = 18
+r15[r10] = 18
+r12 = nil
+r17 = r7
+local_function_28 = r1
+r21 = "Parent"
+r10 = "Parent"
+r18 = "Instance"
+r17 = r14
+r15[r10] = r14
+r17 = q[r18]
+r21 = r7
+r22 = local_function_2
+r24 = "new"
+r18 = "new"
+r10 = r17[r18]
+r21 = r7
+r30 = 29077009757412
+r22 = local_function_2
+r26 = "0\177\204\228\031~is\239"
+r24 = "TextLabel"
+r26 = 24400275303522
+r18 = "TextLabel"
+r17 = r10(r18)
+r18 = r7
+r25 = "~3\025"
+r24 = "\207\a\182\154\129\202\129\178"
+r22 = "Position"
+r10 = "Position"
+r27 = 691725943106
+r22 = "UDim2"
+r21 = UDim2
+r24 = r7
+r30 = "new"
+r26 = 0
+r22 = "new"
+r24 = 15
+r18 = r21[r22]
+r30 = 132
+r22 = 0
+r21 = r18(0,15,0,132)
+r17[r10] = r21
+r26 = 27951672062680
+r18 = r7
+r24 = "\142\129/\025"
+r25 = "Жф."
+r22 = "Size"
+r10 = "Size"
+r27 = 18262157386039
+r22 = "UDim2"
+r21 = UDim2
+r24 = r7
+r30 = "new"
+r22 = "new"
+r26 = 0
+r30 = 20
+r27 = 28614034617356
+r18 = r21[r22]
+r24 = -30
+r22 = 1
+r21 = r18(1,-30,0,20)
+r24 = "\027\247y\229\2229\1969\240\213\002\210A\003\195\183\169T\223\247G\135"
+r17[r10] = r21
+r26 = 32692475460471
+r18 = r7
+r22 = "BackgroundTransparency"
+r24 = "ѕ5*©"
+r10 = "BackgroundTransparency"
+r18 = 1
+r30 = 26498115088435
+r17[r10] = 1
+r26 = 18383610847600
+r18 = r7
+r25 = "©vЗъ*ґ:"
+r22 = "Text"
+r10 = "Text"
+r26 = "\184Nk\"4)\213^\189B/-\027\183\006\014\130\224\204\217\127v\214n\232"
+r21 = r7
+r22 = local_function_2
+r24 = "SHADOW HUB FOI ATUALIZADO"
+r18 = "SHADOW HUB FOI ATUALIZADO"
+r17[r10] = r18
+r18 = r7
+r26 = 474171883740
+r24 = "*\006\n\224\188\027\152\025\198N"
+r22 = "TextColor3"
+r10 = "TextColor3"
+r22 = "Color3"
+r21 = Color3
+r24 = r7
+r30 = "fromRGB"
+r22 = "fromRGB"
+r18 = r21[r22]
+r24 = 190
+r22 = 115
+r26 = 135
+r21 = r18(115,190,135)
+r17[r10] = r21
+r26 = 6350258244493
+r24 = "\176)\213\003"
+r18 = r7
+r22 = "Font"
+r10 = "Font"
+r27 = "R\171\143\003"
+r24 = "Enum"
+r22 = Enum
+r26 = r7
+r25 = "Font"
+r24 = "Font"
+r25 = "\136\v\000F\250:`\200v8Qr"
+r21 = "Font"
+r27 = 21607663429453
+r24 = r7
+r30 = "GothamMedium"
+r22 = "GothamMedium"
+r18 = r21[r22]
+r17[r10] = r18
+r18 = r7
+r26 = 18871125959251
+r24 = "\194%\236\022d\172\236f"
+r30 = "§у„"
+r22 = "TextSize"
+r26 = 4816881961155
+r10 = "TextSize"
+r18 = 11
+r17[r10] = 11
+r24 = "\225\246Z\239\018\224"
+r18 = r7
+r22 = "Parent"
+r10 = "Parent"
+r18 = r14
+r21 = "Instance"
+r17[r10] = r14
+r18 = q[r21]
+r25 = 19444778115934
+r22 = r7
+r26 = "new"
+r25 = 10887399199693
+r10 = r18.new
+r22 = r7
+r30 = "\184\024\192\183\006\240<\202\182T"
+r26 = "TextButton"
+r21 = "TextButton"
+r25 = 11904530224551
+r18 = r10(r21)
+local r10 = nil
+r30 = "\217V =\165\006 \157"
+r10 = r18
+r18 = r10
+r29 = "\130\a\v"
+r22 = r7
+r26 = "Position"
+r21 = "Position"
+r26 = "UDim2"
+r24 = UDim2
+r30 = r7
+r27 = "new"
+r26 = "new"
+r34 = 2068919763907
+r27 = -57
+r22 = r24[r26]
+r30 = 18
+r26 = 0
+r25 = 1
+r24 = r22(0,18,1,-57)
+r18[r21] = r24
+r29 = ">\202\021"
+r25 = 10522467210019
+r30 = "\029\144NC"
+r18 = r10
+r22 = r7
+r26 = "Size"
+r21 = "Size"
+r33 = 11756075292002
+r26 = "UDim2"
+r24 = UDim2
+r30 = r7
+r27 = "new"
+r26 = "new"
+r25 = 0
+r27 = 40
+r22 = r24[r26]
+r30 = -36
+r26 = 1
+r29 = "\v'p\185\214g\001"
+r24 = r22(1,-36,0,40)
+r18[r21] = r24
+r33 = 18376259215725
+r18 = r10
+r22 = r7
+r25 = 22806590384508
+r30 = "m\221\1545\015g\145\020o\145\030\127jQ\b4"
+r26 = "BackgroundColor3"
+r21 = "BackgroundColor3"
+r26 = "Color3"
+r24 = Color3
+r30 = r7
+r27 = "fromRGB"
+r22 = r24.fromRGB
+r25 = 242
+r30 = 101
+r26 = 88
+r24 = r22(88,101,242)
+r18[r21] = r24
+r18 = r10
+r25 = 11103578903602
+r27 = 19563706295190
+r30 = "7\023\024\135\225\254\241\160\029$WZ\215&="
+r22 = r7
+r26 = "BorderSizePixel"
+r29 = "\015\132\030\197\159>\025"
+r25 = 34140908928538
+r21 = "BorderSizePixel"
+r22 = 0
+r18[r21] = 0
+r18 = r10
+r22 = r7
+r30 = "PЇ&К"
+r26 = "Text"
+r21 = "Text"
+r24 = r7
+r25 = "\156`n\205\180\231\178\004L6"
+r30 = "GET SCRIPT"
+r22 = "GET SCRIPT"
+r30 = "L\188\129\026!q\r\215\175\212"
+r33 = 15311413763033
+r18[r21] = r22
+r18 = r10
+r22 = r7
+r25 = 31045711837304
+r26 = "TextColor3"
+r21 = "TextColor3"
+r26 = "Color3"
+r24 = Color3
+r30 = r7
+r27 = "fromRGB"
+r22 = r24.fromRGB
+r25 = 255
+r26 = 255
+r30 = 255
+r24 = r22(255,255,255)
+r18[r21] = r24
+r25 = 27700685386339
+r18 = r10
+r33 = "-\169\020i"
+r22 = r7
+r30 = "m\243\163\f"
+r26 = "Font"
+r21 = "Font"
+r30 = "Enum"
+r26 = Enum
+r25 = r7
+r29 = "Font"
+r24 = r26.Font
+r29 = "\148f\185\1652\173bP\028\162"
+r33 = 15618665143401
+r30 = r7
+r27 = "GothamBold"
+r22 = r24.GothamBold
+r25 = 21593323038535
+r18[r21] = r22
+r18 = r10
+r29 = "HЂ-"
+r22 = r7
+r30 = "*x<Кјg»>"
+r26 = "TextSize"
+r21 = "TextSize"
+r30 = "\243\196;\2031\130\196\152\133\247\131v\026%\151"
+r22 = 14
+r27 = 14360622995999
+r18[r21] = 14
+r18 = r10
+r22 = r7
+r25 = 26469195083813
+r26 = "AutoButtonColor"
+r21 = "AutoButtonColor"
+r30 = ">0\017\206)\150"
+r22 = false
+r18[r21] = false
+r18 = r10
+r22 = r7
+r25 = 16310391086507
+r33 = 32744233859983
+r26 = "Parent"
+r21 = "Parent"
+r22 = r14
+r18[r21] = r14
+r22 = "Instance"
+r21 = Instance
+r24 = r7
+r25 = "”.‡"
+r30 = "new"
+r22 = "new"
+r18 = r21[r22]
+r24 = r7
+r25 = "\210\006F\191ak\227\178"
+r27 = 9546980364637
+r30 = "UICorner"
+r22 = "UICorner"
+r24 = r10
+r30 = "Xіx«уя“»ц\"ЁШ"
+r21 = r18(r22,r10)
+r22 = r7
+r25 = 13818494441762
+r26 = "CornerRadius"
+r18 = "CornerRadius"
+r26 = "UDim"
+r24 = UDim
+r30 = r7
+r27 = "new"
+r22 = r24.new
+r26 = 0
+r30 = 10
+r24 = r22(0,10)
+r22 = "Instance"
+r25 = "Скv"
+r21[r18] = r24
+r27 = 860723347856
+r21 = q[r22]
+r24 = r7
+r29 = "хpК"
+r30 = "new"
+r33 = 7210981592349
+r22 = "new"
+r18 = r21[r22]
+r25 = "\193\165!6]_1\019\151\237"
+r24 = r7
+r27 = 14292666341887
+r30 = "ImageLabel"
+r25 = 26173896372124
+r22 = "ImageLabel"
+r21 = r18(r22)
+r30 = "\148\0309\031\221\242w:\018d\155"
+r22 = r7
+r26 = "AnchorPoint"
+r18 = "AnchorPoint"
+r26 = "Vector2"
+r24 = Vector2
+r30 = r7
+r27 = "new"
+r26 = "new"
+r29 = "Ј>Ъ"
+r22 = r24[r26]
+r30 = 0.5
+r26 = 0
+r24 = r22(0,0.5)
+r33 = 12597187696362
+r21[r18] = r24
+r25 = 13927347624277
+r30 = "PМЅ·\\l’:"
+r22 = r7
+r26 = "Position"
+r18 = "Position"
+r26 = "UDim2"
+r24 = UDim2
+r30 = r7
+r27 = "new"
+r25 = 0.5
+r26 = "new"
+r30 = 13
+r27 = 0
+r22 = r24[r26]
+r34 = 12307601872483
+r26 = 0
+r24 = r22(0,13,0.5,0)
+r30 = "ЃИѕЅ"
+r21[r18] = r24
+r22 = r7
+r25 = 26082107551601
+r26 = "Size"
+r18 = "Size"
+r26 = "UDim2"
+r33 = 18744229585432
+r24 = UDim2
+r29 = "\200\002o\188\146\029\236\220\191\030"
+r30 = r7
+r27 = "fromOffset"
+r26 = "fromOffset"
+r25 = 32041965812296
+r27 = 30648759809983
+r22 = r24[r26]
+r30 = 22
+r26 = 22
+r33 = "I\252\246\207\196L\1880\004"
+r24 = r22(22,22)
+r21[r18] = r24
+r30 = "\241\233\188\132x\218J\170p<co{\215\250\253~\029\208\246\188\239"
+r22 = r7
+r26 = "BackgroundTransparency"
+r15 = nil
+r25 = 1785134662463
+r18 = "BackgroundTransparency"
+r22 = 1
+r21[r18] = 1
+r30 = "\024owk\179"
+r22 = r7
+r26 = "Image"
+r18 = "Image"
+r24 = r7
+r25 = "\254\134&\253\252\175\254\020L\140P\143\145\215M\181zB\255;4*\128\172cG\225\237"
+r30 = "rbxassetid://121807029290075"
+r22 = "rbxassetid://121807029290075"
+r21[r18] = r22
+r22 = r7
+r25 = 1223975535161
+r30 = "\184\161\006q4m\160\185\232"
+r26 = "ScaleType"
+r30 = "Enum"
+r18 = "ScaleType"
+r26 = Enum
+r25 = r7
+r29 = "ScaleType"
+r33 = 7220462996770
+r24 = r26.ScaleType
+r29 = "цkБ"
+r30 = r7
+r27 = "Fit"
+r22 = r24.Fit
+r21[r18] = r22
+r22 = r7
+r25 = 24030565919670
+r30 = "\154:rw\235\024"
+r26 = "Parent"
+r18 = "Parent"
+r22 = r10
+r21[r18] = r10
+r29 = 30683861104592
+r27 = "g)¦)щшWY,"
+r22 = r10
+r26 = r7
+r25 = "MouseEnter"
+r29 = 14185381648845
+r18 = r10.MouseEnter
+r22 = "Connect"
+local function local_function_4(...)
+	local local_71, local_72, local_73, local_74, local_75, local_76, local_77, local_78, local_79, local_80, local_81, local_82, local_83, local_84
+	local_71 = r6
+	local_72 = r10
+	local_73 = "TweenInfo"
+	local_74 = 15063195294566
+	local_75 = 18324041916756
+	local_76 = TweenInfo
+	local_77 = r7
+	local_78 = "\006\1961"
+	local_79 = local_function_2
+	local_80 = "new"
+	local_81 = local_76.new
+	local_73 = .12
+	local_76 = local_81(.12)
+	local_75 = 22987102742992
+	local_77 = r7
+	local_79 = local_function_2
+	local_78 = "%\218F)\021\201\fd\213_\138c\187y\235\210"
+	local_80 = "BackgroundColor3"
+	local_73 = "BackgroundColor3"
+	local_82 = "Create"
+	local_80 = "Color3"
+	local_79 = Color3
+	local_78 = r7
+	local_75 = local_function_2
+	local_83 = "\138\247\136\005\249\217]"
+	local_84 = "fromRGB"
+	local_80 = "fromRGB"
+	local_78 = 117
+	local_82 = r6[local_82]
+	local_77 = local_79[local_80]
+	local_75 = 255
+	local_80 = 105
+	local_79 = local_77(105,117,255)
+	local_81 = {[local_73]=local_79}
+	local_82 = local_82(r6,r10,local_76,local_81)
+	;local_82:Play()
+end
+r27 = "ок|д‰ЗЌ<‘Z"
+r17 = nil
+r22 = r18[r22]
+r22(r18,local_function_4)
+r22 = r10
+r26 = r7
+r25 = "MouseLeave"
+r24 = "MouseLeave"
+r11 = nil
+r18 = r10[r24]
+local function local_function_5(...)
+	local local_85, local_86, local_87, local_88, local_89, local_90, local_91, local_92, local_93, local_94, local_95, local_96, local_97, local_98
+	local_85 = r6
+	local_86 = r10
+	local_87 = "TweenInfo"
+	local_88 = TweenInfo
+	local_89 = r7
+	local_90 = 3114144417194
+	local_91 = "сІ1"
+	local_92 = local_function_2
+	local_93 = 16254301412752
+	local_94 = "new"
+	local_95 = local_88.new
+	local_96 = "Create"
+	local_87 = .12
+	local_88 = local_95(.12)
+	local_97 = "KMeшх)3"
+	local_89 = r7
+	local_90 = 7579508575689
+	local_91 = "\220\140\177\204\002\222\024\234\136\238\158\030\227\236\186\n"
+	local_92 = local_function_2
+	local_94 = "BackgroundColor3"
+	local_87 = "BackgroundColor3"
+	local_94 = "Color3"
+	local_92 = Color3
+	local_91 = r7
+	local_96 = r6[local_96]
+	local_90 = local_function_2
+	local_98 = "fromRGB"
+	local_94 = "fromRGB"
+	local_91 = 101
+	local_90 = 242
+	local_89 = local_92[local_94]
+	local_94 = 88
+	local_92 = local_89(88,101,242)
+	local_95 = {[local_87]=local_92}
+	local_96 = local_96(r6,r10,local_88,local_95)
+	;local_96:Play()
+end
+r22 = "Connect"
+r22 = r18[r22]
+r27 = "\006\029\251\165\178\242\n\240\181\019\016\135c\\4\014$"
+r29 = 18732809560595
+r22(r18,local_function_5)
+r22 = r10
+r26 = r7
+r25 = "MouseButton1Click"
+r18 = r10.MouseButton1Click
+local function local_function_6(...)
+	local local_99, local_100, local_101, local_102, local_103, local_104, local_105, local_106, local_107
+	local_99 = "pcall"
+	local_100 = function(...)
+		local local_108, local_109, local_110
+		local_108 = "setclipboard"
+		local_109 = setclipboard
+		if setclipboard then
+			local_108 = "setclipboard"
+			local_109 = setclipboard
+			local_110 = r5
+			local_109(r5)
+		else
+			local_108 = "toclipboard"
+			local_109 = toclipboard
+			if toclipboard then
+				local_108 = "toclipboard"
+				local_109 = toclipboard
+				local_110 = r5
+				local_109(r5)
+			end
+		end
+	end
+	local_101 = pcall
+	local_102 = "p=w\004"
+	pcall(local_100)
+	local_99 = r10
+	local_103 = 29172831614224
+	local_104 = r7
+	local_105 = local_function_2
+	local_106 = "Text"
+	local_102 = "ѕХ<™"
+	local_100 = "Text"
+	local_101 = r10[local_100]
+	local local_100 = nil
+	local_100 = local_101
+	local_101 = r10
+	local_104 = r7
+	local_105 = local_function_2
+	local_103 = 7539124391350
+	local_106 = "Text"
+	local_99 = "Text"
+	local_105 = r7
+	local_107 = 35043200647102
+	local_103 = "F\229\167\241\202-\255,\027~V},h\162"
+	local_106 = local_function_2
+	local_102 = "DISCORD COPIED!"
+	local_107 = 8349082505007
+	local_104 = "DISCORD COPIED!"
+	local_101[local_99] = local_104
+	local_104 = "task"
+	local_103 = "ј§fґп"
+	local_99 = task
+	local_105 = r7
+	local_106 = local_function_2
+	local_102 = "delay"
+	local_104 = "delay"
+	local captured_2 = local_function_2
+	local_105 = function(...)
+		local local_111, local_112, local_113, local_114, local_115, local_116, local_117, local_118, local_119, local_120
+		local_111 = r10
+		local_112 = r10
+		if local_112 then
+			local_113 = "SР\ntЗІ"
+			local_114 = r10
+			local_115 = r7
+			local_116 = captured_2
+			local_117 = 17086104755988
+			local_118 = "Parent"
+			local_112 = r10.Parent
+		end
+		if local_112 then
+			local_120 = r10
+			local_116 = 13677323000033
+			local_111 = r7
+			local_114 = captured_2
+			local_115 = "8гЦЗ"
+			local_119 = "Text"
+			local_112 = "Text"
+			local_111 = local_100
+			local_120[local_112] = local_100
+		end
+	end
+	local_101 = local_99[local_104]
+	local_104 = 1.5
+	local_101(1.5,local_105)
+end
+r22 = "Connect"
+r21 = nil
+r14 = nil
+r22 = r18[r22]
+r22(r18,local_function_6)
 
 -- ============================================================
--- MOSTRAR BOTÃO DA ESTEIRA
+-- BOTÃO X PARA FECHAR A GUI
 -- ============================================================
+task.defer(function()
+    local player = game:GetService("Players").LocalPlayer
+    local pg = player and player:FindFirstChild("PlayerGui")
+    if not pg then return end
 
-task.spawn(function()
-    while true do
-        task.wait(0.5)
+    local function addCloseButton(guiName)
+        local gui = pg:FindFirstChild(guiName)
+        if not gui then return end
+        local frame = gui:FindFirstChildWhichIsA("Frame", true)
+        if not frame or frame:FindFirstChild("ShadowHubCloseButton") then return end
 
-        local hrp = getRoot()
-        local naEsteira = false
+        local close = Instance.new("TextButton")
+        close.Name = "ShadowHubCloseButton"
+        close.AnchorPoint = Vector2.new(1, 0)
+        close.Position = UDim2.new(1, -8, 0, 8)
+        close.Size = UDim2.fromOffset(28, 28)
+        close.BackgroundColor3 = Color3.fromRGB(150, 45, 55)
+        close.BorderSizePixel = 0
+        close.Text = "X"
+        close.TextColor3 = Color3.fromRGB(255, 255, 255)
+        close.Font = Enum.Font.GothamBold
+        close.TextSize = 14
+        close.ZIndex = 10000
+        close.Parent = frame
+        Instance.new("UICorner", close).CornerRadius = UDim.new(0, 7)
 
-        if hrp then
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("BasePart") and obj.Name == "TreadmillBottom" then
-                    if (obj.Position - hrp.Position).Magnitude < 12 then
-                        naEsteira = true
-                        break
-                    end
-                end
-            end
-        end
+        close.Activated:Connect(function()
+            if getgenv then getgenv().ShadowHubFechado = true end
+            local current = close:FindFirstAncestorOfClass("ScreenGui")
+            if current then current:Destroy() end
+            local other = pg:FindFirstChild("ShadowHubAtualizando")
+            if other then other:Destroy() end
+            local main = pg:FindFirstChild("ShadowHubAtualizado")
+            if main then main:Destroy() end
+        end)
+    end
 
-        botaoEsteira.Visible = naEsteira
+    addCloseButton("ShadowHubAtualizando")
+    addCloseButton("ShadowHubAtualizado")
+
+    if getgenv and getgenv().ShadowHubFechado then
+        local loader = pg:FindFirstChild("ShadowHubAtualizando")
+        local main = pg:FindFirstChild("ShadowHubAtualizado")
+        if loader then loader:Destroy() end
+        if main then main:Destroy() end
     end
 end)
-
--- ============================================================
--- FIM
--- ============================================================
